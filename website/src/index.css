@@ -1,0 +1,133 @@
+@import "tailwindcss";
+@theme {
+    --color-nord-0: #2E3440;
+    /* Polar Night - Darkest */
+    --color-nord-1: #3B4252;
+    /* Polar Night */
+    --color-nord-2: #434C5E;
+    /* Polar Night */
+    --color-nord-3: #4C566A;
+    /* Polar Night - Lightest */
+
+    --color-nord-4: #D8DEE9;
+    /* Snow Storm - Darkest */
+    --color-nord-5: #E5E9F0;
+    /* Snow Storm */
+    --color-nord-6: #ECEFF4;
+    /* Snow Storm - Lightest */
+
+    --color-nord-7: #8FBCBB;
+    /* Frost - Teal */
+    --color-nord-8: #88C0D0;
+    /* Frost - Cyan */
+    --color-nord-9: #81A1C1;
+    /* Frost - Light Blue */
+    --color-nord-10: #5E81AC;
+    /* Frost - Dark Blue */
+
+    --color-nord-11: #BF616A;
+    /* Aurora - Red */
+    --color-nord-12: #D08770;
+    /* Aurora - Orange */
+    --color-nord-13: #EBCB8B;
+    /* Aurora - Yellow */
+    --color-nord-14: #A3BE8C;
+    /* Aurora - Green */
+    --color-nord-15: #B48EAD;
+    /* Aurora - Purple */
+}
+
+:root {
+    color-scheme: light;
+
+    /* App Theme Variables Mapped to Nord */
+    --accent-success: var(--color-nord-14);
+    --accent-warning: var(--color-nord-12);
+    /* Orange for warning, or Yellow nord13 */
+    --accent-danger: var(--color-nord-11);
+    --accent-primary: var(--color-nord-10);
+    --accent-secondary: var(--color-nord-9);
+
+    --text-primary: var(--color-nord-0);
+    --text-secondary: var(--color-nord-3);
+
+    --bg-primary: var(--color-nord-6);
+    --bg-secondary: var(--color-nord-5);
+    --bg-tertiary: var(--color-nord-4);
+
+    --glass-border: var(--color-nord-4);
+    --glass-bg: rgba(236, 239, 244, 0.95);
+
+    --panel-bg: var(--color-nord-6);
+    --card-bg: var(--color-nord-5);
+    --nav-bg: var(--color-nord-6);
+    --input-bg: var(--color-nord-4);
+}
+
+
+/* Wind Arrow Animation */
+@keyframes dash-flow {
+    to {
+        stroke-dashoffset: -20;
+    }
+}
+
+.wind-arrow-path {
+    animation: dash-flow 1s linear infinite;
+}
+
+/* Marker Pop-in Animation */
+@keyframes popIn {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+
+    80% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+.unit-marker-animate {
+    animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* Radar Scan Animation */
+@keyframes radarScan {
+    0% {
+        top: 0%;
+        opacity: 0;
+    }
+
+    10% {
+        opacity: 1;
+    }
+
+    90% {
+        opacity: 1;
+    }
+
+    100% {
+        top: 100%;
+        opacity: 0;
+    }
+}
+
+.radar-sweep {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 4px;
+    /* Scanning beam height */
+    background: linear-gradient(to right, transparent, rgba(94, 129, 172, 0.8), transparent);
+    /* nord10 */
+    box-shadow: 0 0 15px rgba(94, 129, 172, 0.8);
+    z-index: 50;
+    animation: radarScan 2s linear infinite;
+    pointer-events: none;
+}

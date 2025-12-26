@@ -1,0 +1,2 @@
+Numerical Columns: ['Hours_Studied', 'Attendance', 'Sleep_Hours', 'Tutoring_Sessions', 'Physical_Activity']
+Categorical Columns: ['Motivation_Level', 'Parental_Involvement', 'Access_to_Resources', 'Internet_Access', 'Extracurricular_Activities', 'Peer_Influence', 'Learning_Disabilities', 'Gender']
