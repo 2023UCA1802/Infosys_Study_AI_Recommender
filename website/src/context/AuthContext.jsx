@@ -7,7 +7,7 @@ export const AuthProvider = ({ children }) => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState("");
-
+  const [image, setImage] = useState("");
   const [role, setRole] = useState("");
 
   const [projectsdetail, setProjectsdetail] = useState(() => {
@@ -48,6 +48,7 @@ export const AuthProvider = ({ children }) => {
           setEmail(data.email);
           setUsername(data.username);
           setRole(data.role);
+          setImage(data.image || "");
           console.log(data.username);
         }
       } catch (err) {
@@ -73,6 +74,7 @@ export const AuthProvider = ({ children }) => {
         setUsername("");
         setRole("");
         setEmail("");
+        setImage("");
         // Clear any other state if necessary
       } else {
         console.error("Logout failed:", data.message);
@@ -97,6 +99,8 @@ export const AuthProvider = ({ children }) => {
         setRole,
         projectsdetail,
         setProjectsdetail,
+        image,
+        setImage,
         logout,
       }}
     >

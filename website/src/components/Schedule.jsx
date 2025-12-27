@@ -18,9 +18,10 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import Sidebar from './Sidebar';
 
 const Schedule = () => {
-    const { username, email, logout } = useAuth();
+    const { username, email, logout, image, role } = useAuth();
     const navigate = useNavigate();
     const [tasks, setTasks] = useState([]);
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -134,62 +135,13 @@ const Schedule = () => {
         });
     };
 
-    // Sidebar Item Component (Duplicated for now per plan)
-    const SidebarItem = ({ icon: Icon, label, active, onClick }) => (
-        <motion.div
-            whileHover={{ x: 4 }}
-            onClick={onClick}
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition-colors ${active
-                ? 'bg-nord-10/10 text-nord-10'
-                : 'text-nord-3 hover:bg-nord-4/50 hover:text-nord-1'
-                }`}
-        >
-            <Icon size={20} strokeWidth={2} />
-            <span className="font-medium text-sm">{label}</span>
-            {active && (
-                <motion.div
-                    layoutId="sidebar-active"
-                    className="absolute left-0 w-1 h-8 bg-nord-10 rounded-r-full"
-                />
-            )}
-        </motion.div>
-    );
+
 
     return (
         <div className="flex min-h-screen bg-nord-6 font-sans">
             {/* Internal Sidebar */}
-            <aside className="w-64 bg-white border-r border-nord-4 fixed h-full z-20 hidden md:flex flex-col">
-                <div className="p-6">
-                    <div className="flex items-center gap-3 text-nord-10 mb-8">
-                        <Brain size={32} strokeWidth={2.5} />
-                        <span className="text-xl font-bold tracking-tight text-nord-0">StudyMind</span>
-                    </div>
-
-                    <nav className="space-y-2">
-                        <SidebarItem icon={LayoutDashboard} label="Overview" onClick={() => navigate('/home')} />
-                        <SidebarItem icon={Sparkles} label="Recommendations" onClick={() => navigate('/get_recommendation')} />
-                        <SidebarItem icon={MessageSquare} label="Feedback" onClick={() => navigate('/feedback')} />
-                        <SidebarItem icon={CalendarIcon} label="Schedule" active={true} onClick={() => { }} />
-                        <SidebarItem icon={Target} label="Goals" onClick={() => navigate('/goals')} />
-                    </nav>
-                </div>
-
-                <div className="mt-auto p-6 border-t border-nord-4">
-                    {/* <SidebarItem icon={Settings} label="Settings" /> */}
-                    <div onClick={logout} className="mt-2">
-                        <SidebarItem icon={LogOut} label="Sign Out" />
-                    </div>
-                    <div className="mt-4 flex items-center gap-3 p-3 bg-nord-6 rounded-xl">
-                        <div className="w-10 h-10 rounded-full bg-nord-10 flex items-center justify-center text-white font-bold">
-                            {username ? username[0].toUpperCase() : 'U'}
-                        </div>
-                        <div className="flex-1 overflow-hidden">
-                            <p className="text-sm font-bold text-nord-1 truncate">{username || 'Student'}</p>
-                            <p className="text-xs text-nord-3 truncate">Pro Plan</p>
-                        </div>
-                    </div>
-                </div>
-            </aside>
+            {/* Internal Sidebar */}
+            <Sidebar />
 
             {/* Main Content */}
             <main className="flex-1 md:ml-64 p-8 overflow-y-auto">

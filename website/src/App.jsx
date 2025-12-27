@@ -11,15 +11,19 @@ import Verify from "./components/Verify";
 import Forgot from "./components/Forgot";
 import { useAuth } from "./context/AuthContext.jsx";
 import Navbar from "./components/Navbar.jsx";
-import VideoBackground from "./VideoBackground.jsx";
+
 import PageTransition from "./components/PageTransition.jsx";
 import GetRecommendation from "./components/GetRecommendation.jsx";
 import Feedback from "./components/Feedback.jsx";
 import Goals from "./components/Goals.jsx";
 import Schedule from "./components/Schedule.jsx";
+import Profile from "./components/Profile.jsx";
+import StudyTracker from "./components/StudyTracker.jsx";
+import AdminFeedback from "./components/AdminFeedback.jsx";
+import LandingPage from "./components/LandingPage.jsx";
 
 function App() {
-  const { isLoggedIn, setIsLoggedIn, setEmail, email, setUsername, loading, setRole } = useAuth();
+  const { isLoggedIn, setIsLoggedIn, setEmail, email, setUsername, loading, setRole, setImage } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -100,6 +104,9 @@ function App() {
                 <Route path="/feedback" element={<PageTransition><Feedback /></PageTransition>} />
                 <Route path="/goals" element={<PageTransition><Goals /></PageTransition>} />
                 <Route path="/schedule" element={<PageTransition><Schedule /></PageTransition>} />
+                <Route path="/profile" element={<PageTransition><Profile /></PageTransition>} />
+                <Route path="/study-tracker" element={<PageTransition><StudyTracker /></PageTransition>} />
+                <Route path="/admin/feedback" element={<PageTransition><AdminFeedback /></PageTransition>} />
 
 
 
@@ -114,32 +121,40 @@ function App() {
 
 
         <>
-          <VideoBackground>
-            <Routes>
-              <Route
-                path="/"
-                element={<Login onLog={(username, role) => { setIsLoggedIn(true); setUsername(username); setRole(role); }} />}
-              />
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route
+              path="/login"
+              element={
+                <Login onLog={(email, username, role, image) => { setIsLoggedIn(true); setEmail(email); setUsername(username); setRole(role); setImage(image || ""); }} />
+              }
+            />
 
-              <Route
-                path="/otp"
-                element={<Verify onLoginSuccess={(email) => {
+            <Route
+              path="/otp"
+              element={
+                <Verify onLoginSuccess={(email, username, role, image) => {
                   setIsLoggedIn(true);
                   setEmail(email);
-                }} />}
-              />
+                  setUsername(username);
+                  setRole(role);
+                  setImage(image);
+                }} />
+              }
+            />
 
-              <Route
-                path="/forgot"
-                element={<Forgot onLoginSuccess={(email, username) => {
+            <Route
+              path="/forgot"
+              element={
+                <Forgot onLoginSuccess={(email, username) => {
                   setEmail(email);
                   setUsername(username);
                   setIsLoggedIn(true);
-                }} />}
-              />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </VideoBackground>
+                }} />
+              }
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
         </>
 
       )}

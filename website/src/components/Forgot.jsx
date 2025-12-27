@@ -1,6 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 
 const Forgot = ({ onLoginSuccess }) => {
     const [isConfirmFocused, setIsConfirmFocused] = useState(false);
@@ -123,7 +124,7 @@ const Forgot = ({ onLoginSuccess }) => {
             alert(data.message || 'OTP verification failed');
         }
     };
-    
+
 
     const formatTime = (sec) => {
         const m = Math.floor(sec / 60).toString().padStart(2, '0');
@@ -201,13 +202,27 @@ const Forgot = ({ onLoginSuccess }) => {
     };
 
     return (
-        <div className="min-h-screen w-full flex items-center justify-center p-4">
+        <div className="min-h-screen w-full flex items-center justify-center p-4 bg-[#0f111a] text-white relative overflow-hidden font-sans selection:bg-indigo-500/30">
+            {/* Abstract Background Elements */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-600/20 rounded-full blur-[120px]" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/20 rounded-full blur-[120px]" />
+                <div className="absolute top-[40%] left-[30%] w-[30%] h-[30%] bg-blue-600/10 rounded-full blur-[100px]" />
+            </div>
+
+            <button
+                onClick={() => navigate("/")}
+                className="absolute top-6 left-6 p-2 rounded-full bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-all duration-300 backdrop-blur-sm border border-white/5 z-20 group"
+            >
+                <ArrowLeft className="w-6 h-6 group-hover:-translate-x-1 transition-transform" />
+            </button>
+
             {/* Minimalistic Container - Glassmorphism */}
             <div className="w-full max-w-md relative z-10">
                 {/* Header */}
                 <div className="text-center mb-10">
-                    <h1 className="text-5xl font-extralight text-white mb-2 tracking-tight">SITUS</h1>
-                    <p className="text-white/70 text-sm uppercase tracking-widest">Digital Twin Monitor</p>
+                    <h1 className="text-5xl font-extralight text-white mb-2 tracking-tight">StudyMind</h1>
+                    <p className="text-white/70 text-sm uppercase tracking-widest">Study Schedule Recommender</p>
                 </div>
 
                 {/* Form Container */}
@@ -267,7 +282,7 @@ const Forgot = ({ onLoginSuccess }) => {
                                     )}
                                 </button>
                                 <button
-                                    onClick={() => navigate("/")}
+                                    onClick={() => navigate("/login")}
                                     className="w-full rounded-xl py-3.5 font-medium text-white/50 hover:text-white transition-colors text-sm"
                                 >
                                     Back to Login
