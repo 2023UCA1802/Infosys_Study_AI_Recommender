@@ -609,7 +609,7 @@ router.delete("/api/goals/:id", async (req, res) => {
 
 // POST: Create Schedule Task
 router.post("/api/schedule", async (req, res) => {
-  const { userEmail, title, startTime, endTime, description } = req.body;
+  const { userEmail, title, date, startTime, endTime, description } = req.body;
   const db = client.db(dbname);
   const collection = db.collection("Schedule");
 
@@ -617,11 +617,8 @@ router.post("/api/schedule", async (req, res) => {
     const newTask = {
       userEmail,
       title,
-      startTime, // Store as string "HH:mm" or similar, or Date object?
-                 // Plan said "tasks with timelines of 1 hour".
-                 // Let's store day and start hour.
-                 // Actually, simpler to just store what the frontend sends.
-                 // Frontend will likely send a specific date and time range.
+      date,
+      startTime,
       endTime,
       description,
       createdAt: new Date()

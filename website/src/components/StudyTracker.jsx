@@ -15,7 +15,6 @@ import {
     LogOut
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import Sidebar from './Sidebar';
 
 const StudyTracker = () => {
     const { email, username, logout, image, role } = useAuth();
@@ -104,157 +103,150 @@ const StudyTracker = () => {
 
 
     return (
-        <div className="flex min-h-screen bg-nord-6 font-sans">
-            {/* Sidebar */}
-            {/* Sidebar */}
-            <Sidebar />
+        <div className="p-8">
+            <header className="mb-8">
+                <h1 className="text-3xl font-bold text-nord-0 mb-1">Study Tracker 📚</h1>
+                <p className="text-nord-3 text-sm">Log your daily study sessions to track your progress.</p>
+            </header>
 
-            {/* Main Content */}
-            <main className="flex-1 md:ml-64 p-8">
-                <header className="mb-8">
-                    <h1 className="text-3xl font-bold text-nord-0 mb-1">Study Tracker 📚</h1>
-                    <p className="text-nord-3 text-sm">Log your daily study sessions to track your progress.</p>
-                </header>
-
-                {/* Add Study Session Form */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-white rounded-2xl shadow-sm border border-nord-4 p-6 mb-8"
-                >
-                    <h2 className="text-xl font-bold text-nord-1 mb-4 flex items-center gap-2">
-                        <Plus size={20} className="text-nord-10" />
-                        Log Study Session
-                    </h2>
-                    <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
-                        <div>
-                            <label className="block text-sm font-medium text-nord-3 mb-1">Date</label>
-                            <input
-                                type="date"
-                                value={date}
-                                onChange={(e) => setDate(e.target.value)}
-                                className="w-full px-4 py-2 border border-nord-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-nord-10"
-                                required
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-nord-3 mb-1">Start Time</label>
-                            <input
-                                type="time"
-                                value={startTime}
-                                onChange={(e) => setStartTime(e.target.value)}
-                                className="w-full px-4 py-2 border border-nord-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-nord-10"
-                                required
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-nord-3 mb-1">End Time</label>
-                            <input
-                                type="time"
-                                value={endTime}
-                                onChange={(e) => setEndTime(e.target.value)}
-                                className="w-full px-4 py-2 border border-nord-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-nord-10"
-                                required
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-nord-3 mb-1">Subject (Optional)</label>
-                            <input
-                                type="text"
-                                value={subject}
-                                onChange={(e) => setSubject(e.target.value)}
-                                placeholder="e.g. Mathematics"
-                                className="w-full px-4 py-2 border border-nord-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-nord-10"
-                            />
-                        </div>
-                        <button
-                            type="submit"
-                            disabled={submitting}
-                            className="bg-nord-10 text-white px-6 py-2 rounded-lg font-medium hover:bg-nord-9 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                        >
-                            {submitting ? (
-                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                            ) : (
-                                <>
-                                    <Plus size={18} />
-                                    Add
-                                </>
-                            )}
-                        </button>
-                    </form>
-                    {startTime && endTime && (
-                        <p className="text-sm text-nord-3 mt-3">
-                            Duration: <span className="font-bold text-nord-10">{calculateDuration(startTime, endTime)}</span>
-                        </p>
-                    )}
-                </motion.div>
-
-                {/* Study Log History */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="bg-white rounded-2xl shadow-sm border border-nord-4 overflow-hidden"
-                >
-                    <div className="p-6 border-b border-nord-4">
-                        <h2 className="text-xl font-bold text-nord-1 flex items-center gap-2">
-                            <BookOpen size={20} className="text-nord-14" />
-                            Study History
-                        </h2>
+            {/* Add Study Session Form */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-2xl shadow-sm border border-nord-4 p-6 mb-8"
+            >
+                <h2 className="text-xl font-bold text-nord-1 mb-4 flex items-center gap-2">
+                    <Plus size={20} className="text-nord-10" />
+                    Log Study Session
+                </h2>
+                <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+                    <div>
+                        <label className="block text-sm font-medium text-nord-3 mb-1">Date</label>
+                        <input
+                            type="date"
+                            value={date}
+                            onChange={(e) => setDate(e.target.value)}
+                            className="w-full px-4 py-2 border border-nord-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-nord-10"
+                            required
+                        />
                     </div>
+                    <div>
+                        <label className="block text-sm font-medium text-nord-3 mb-1">Start Time</label>
+                        <input
+                            type="time"
+                            value={startTime}
+                            onChange={(e) => setStartTime(e.target.value)}
+                            className="w-full px-4 py-2 border border-nord-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-nord-10"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-nord-3 mb-1">End Time</label>
+                        <input
+                            type="time"
+                            value={endTime}
+                            onChange={(e) => setEndTime(e.target.value)}
+                            className="w-full px-4 py-2 border border-nord-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-nord-10"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-nord-3 mb-1">Subject (Optional)</label>
+                        <input
+                            type="text"
+                            value={subject}
+                            onChange={(e) => setSubject(e.target.value)}
+                            placeholder="e.g. Mathematics"
+                            className="w-full px-4 py-2 border border-nord-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-nord-10"
+                        />
+                    </div>
+                    <button
+                        type="submit"
+                        disabled={submitting}
+                        className="bg-nord-10 text-white px-6 py-2 rounded-lg font-medium hover:bg-nord-9 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                        {submitting ? (
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        ) : (
+                            <>
+                                <Plus size={18} />
+                                Add
+                            </>
+                        )}
+                    </button>
+                </form>
+                {startTime && endTime && (
+                    <p className="text-sm text-nord-3 mt-3">
+                        Duration: <span className="font-bold text-nord-10">{calculateDuration(startTime, endTime)}</span>
+                    </p>
+                )}
+            </motion.div>
 
-                    {loading ? (
-                        <div className="p-8 flex justify-center">
-                            <div className="w-8 h-8 border-4 border-nord-10 border-t-transparent rounded-full animate-spin"></div>
-                        </div>
-                    ) : logs.length === 0 ? (
-                        <div className="p-8 text-center text-nord-3">
-                            No study sessions logged yet. Start tracking your study time above!
-                        </div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead>
-                                    <tr className="bg-nord-6 text-nord-3 text-sm uppercase tracking-wider">
-                                        <th className="p-4 text-left font-semibold">Date</th>
-                                        <th className="p-4 text-left font-semibold">Time</th>
-                                        <th className="p-4 text-left font-semibold">Duration</th>
-                                        <th className="p-4 text-left font-semibold">Subject</th>
-                                        <th className="p-4 text-center font-semibold">Actions</th>
+            {/* Study Log History */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="bg-white rounded-2xl shadow-sm border border-nord-4 overflow-hidden"
+            >
+                <div className="p-6 border-b border-nord-4">
+                    <h2 className="text-xl font-bold text-nord-1 flex items-center gap-2">
+                        <BookOpen size={20} className="text-nord-14" />
+                        Study History
+                    </h2>
+                </div>
+
+                {loading ? (
+                    <div className="p-8 flex justify-center">
+                        <div className="w-8 h-8 border-4 border-nord-10 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                ) : logs.length === 0 ? (
+                    <div className="p-8 text-center text-nord-3">
+                        No study sessions logged yet. Start tracking your study time above!
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="bg-nord-6 text-nord-3 text-sm uppercase tracking-wider">
+                                    <th className="p-4 text-left font-semibold">Date</th>
+                                    <th className="p-4 text-left font-semibold">Time</th>
+                                    <th className="p-4 text-left font-semibold">Duration</th>
+                                    <th className="p-4 text-left font-semibold">Subject</th>
+                                    <th className="p-4 text-center font-semibold">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-nord-4">
+                                {logs.map((log) => (
+                                    <tr key={log._id} className="hover:bg-nord-6/30 transition-colors">
+                                        <td className="p-4 font-medium text-nord-1">
+                                            {new Date(log.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                                        </td>
+                                        <td className="p-4 text-nord-3">
+                                            {log.startTime} - {log.endTime}
+                                        </td>
+                                        <td className="p-4">
+                                            <span className="px-3 py-1 bg-nord-10/10 text-nord-10 rounded-full text-sm font-medium">
+                                                {calculateDuration(log.startTime, log.endTime)}
+                                            </span>
+                                        </td>
+                                        <td className="p-4 text-nord-3">{log.subject || '-'}</td>
+                                        <td className="p-4 text-center">
+                                            <button
+                                                onClick={() => handleDelete(log._id)}
+                                                className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                title="Delete"
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody className="divide-y divide-nord-4">
-                                    {logs.map((log) => (
-                                        <tr key={log._id} className="hover:bg-nord-6/30 transition-colors">
-                                            <td className="p-4 font-medium text-nord-1">
-                                                {new Date(log.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                                            </td>
-                                            <td className="p-4 text-nord-3">
-                                                {log.startTime} - {log.endTime}
-                                            </td>
-                                            <td className="p-4">
-                                                <span className="px-3 py-1 bg-nord-10/10 text-nord-10 rounded-full text-sm font-medium">
-                                                    {calculateDuration(log.startTime, log.endTime)}
-                                                </span>
-                                            </td>
-                                            <td className="p-4 text-nord-3">{log.subject || '-'}</td>
-                                            <td className="p-4 text-center">
-                                                <button
-                                                    onClick={() => handleDelete(log._id)}
-                                                    className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                                    title="Delete"
-                                                >
-                                                    <Trash2 size={18} />
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </motion.div>
-            </main>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </motion.div>
         </div>
     );
 };

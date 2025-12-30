@@ -19,7 +19,6 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import StudentStatsModal from './StudentStatsModal';
-import Sidebar from './Sidebar';
 
 const DashboardHome = () => {
   const { username, role, logout, image } = useAuth();
@@ -271,28 +270,22 @@ const DashboardHome = () => {
 
   return (
     <>
-      <div className="flex min-h-screen bg-nord-6 font-sans">
-        {/* Internal Sidebar */}
-        <Sidebar />
+      <div className="p-4 md:p-8">
+        {/* Header */}
+        <header className="flex flex-col md:flex-row md:justify-between md:items-center mb-8 md:mb-10 gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-nord-0 mb-1">
+              {`Welcome back, ${username || 'Alex'}! 👋`}
+            </h1>
+            <p className="text-nord-3 text-sm">
+              {role === 'admin' ? 'Admin Dashboard' : 'Your personal productivity hub.'}
+            </p>
+          </div>
+          <div className="flex items-center gap-4">
+          </div>
+        </header>
 
-        {/* Main Content */}
-        <main className="flex-1 md:ml-64 p-8 overflow-y-auto">
-          {/* Header */}
-          <header className="flex justify-between items-center mb-10">
-            <div>
-              <h1 className="text-3xl font-bold text-nord-0 mb-1">
-                {`Welcome back, ${username || 'Alex'}! 👋`}
-              </h1>
-              <p className="text-nord-3 text-sm">
-                {role === 'admin' ? 'Admin Dashboard' : 'Your personal productivity hub.'}
-              </p>
-            </div>
-            <div className="flex items-center gap-4">
-            </div>
-          </header>
-
-          {renderContent()}
-        </main>
+        {renderContent()}
       </div>
 
       {/* Student Stats Modal */}

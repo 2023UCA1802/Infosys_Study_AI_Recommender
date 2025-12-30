@@ -1,11 +1,63 @@
-import React, { useEffect, useState } from 'react';
-import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
+import React, { useEffect, useState, useRef } from 'react';
+import { motion, useScroll, useTransform, useSpring, useInView } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { BookOpen, Users, Trophy, Target, ArrowRight, Brain, Clock, BarChart } from 'lucide-react';
 
+// Counter animation component
+const Counter = ({ from, to, duration = 2, label, suffix = "", icon: Icon }) => {
+    const [count, setCount] = useState(from);
+    const ref = useRef(null);
+    const isInView = useInView(ref, { once: true, margin: "-100px" });
+
+    useEffect(() => {
+        if (!isInView) return;
+
+        let startTime;
+        let animationFrame;
+
+        const animate = (timestamp) => {
+            if (!startTime) startTime = timestamp;
+            const progress = Math.min((timestamp - startTime) / (duration * 1000), 1);
+
+            // Easing function for smooth animation
+            const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+
+            setCount(Math.floor(easeOutQuart * (to - from) + from));
+
+            if (progress < 1) {
+                animationFrame = requestAnimationFrame(animate);
+            }
+        };
+
+        animationFrame = requestAnimationFrame(animate);
+
+        return () => cancelAnimationFrame(animationFrame);
+    }, [from, to, duration, isInView]);
+
+    return (
+        <div
+            ref={ref}
+            className="relative group p-6 bg-white/5 bg-opacity-10 backdrop-blur-md rounded-2xl border border-white/10 hover:bg-white/10 transition-all duration-300"
+        >
+            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-xl" />
+            <div className="relative z-10 flex flex-col items-center">
+                <div className="p-3 bg-white/10 rounded-full mb-4 group-hover:scale-110 transition-transform duration-300">
+                    {Icon && <Icon className="w-8 h-8 text-indigo-400" />}
+                </div>
+                <motion.div
+                    key={count}
+                    className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-br from-white to-gray-400"
+                >
+                    {count.toLocaleString()}{suffix}
+                </motion.div>
+                <div className="text-gray-400 mt-2 font-medium tracking-wide text-sm uppercase">{label}</div>
+            </div>
+        </div>
+    );
+};
+
 const LandingPage = () => {
     const navigate = useNavigate();
-    const [hoveredStat, setHoveredStat] = useState(null);
     const { scrollYProgress } = useScroll();
     const scaleX = useSpring(scrollYProgress, {
         stiffness: 100,
@@ -21,56 +73,6 @@ const LandingPage = () => {
     const fadeInUp = {
         hidden: { opacity: 0, y: 20 },
         visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
-    };
-
-    // Counter animation component
-    const Counter = ({ from, to, duration = 2, label, suffix = "", icon: Icon }) => {
-        const [count, setCount] = useState(from);
-
-        useEffect(() => {
-            let startTime;
-            let animationFrame;
-
-            const animate = (timestamp) => {
-                if (!startTime) startTime = timestamp;
-                const progress = Math.min((timestamp - startTime) / (duration * 1000), 1);
-
-                // Easing function for smooth animation
-                const easeOutQuart = 1 - Math.pow(1 - progress, 4);
-
-                setCount(Math.floor(easeOutQuart * (to - from) + from));
-
-                if (progress < 1) {
-                    animationFrame = requestAnimationFrame(animate);
-                }
-            };
-
-            animationFrame = requestAnimationFrame(animate);
-
-            return () => cancelAnimationFrame(animationFrame);
-        }, [from, to, duration]);
-
-        return (
-            <div
-                className="relative group p-6 bg-white/5 bg-opacity-10 backdrop-blur-md rounded-2xl border border-white/10 hover:bg-white/10 transition-all duration-300"
-                onMouseEnter={() => setHoveredStat(label)}
-                onMouseLeave={() => setHoveredStat(null)}
-            >
-                <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-xl" />
-                <div className="relative z-10 flex flex-col items-center">
-                    <div className="p-3 bg-white/10 rounded-full mb-4 group-hover:scale-110 transition-transform duration-300">
-                        {Icon && <Icon className="w-8 h-8 text-indigo-400" />}
-                    </div>
-                    <motion.div
-                        key={count}
-                        className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-br from-white to-gray-400"
-                    >
-                        {count}{suffix}
-                    </motion.div>
-                    <div className="text-gray-400 mt-2 font-medium tracking-wide text-sm uppercase">{label}</div>
-                </div>
-            </div>
-        );
     };
 
     return (
@@ -134,7 +136,7 @@ const LandingPage = () => {
                                 #1 A.I. Study Partner
                             </div>
 
-                            <h1 className="text-6xl lg:text-7xl font-bold leading-tight">
+                            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold leading-tight">
                                 Master Your <br />
                                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-400 to-indigo-400">
                                     Study Schedule
@@ -171,7 +173,7 @@ const LandingPage = () => {
                             initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ duration: 0.8, delay: 0.2 }}
-                            className="relative"
+                            className="relative hidden lg:block"
                         >
                             <div className="relative z-10 bg-gradient-to-br from-gray-900 to-black p-4 rounded-2xl border border-white/10 shadow-2xl">
                                 <img
@@ -225,7 +227,7 @@ const LandingPage = () => {
             {/* Stats Section */}
             <section className="py-20 relative z-10">
                 <div className="container mx-auto px-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <Counter
                             from={0}
                             to={50000}
@@ -249,14 +251,6 @@ const LandingPage = () => {
                             label="Goal Completion Rate"
                             suffix="%"
                             icon={Target}
-                        />
-                        <Counter
-                            from={0}
-                            to={200}
-                            duration={2}
-                            label="Universities"
-                            suffix="+"
-                            icon={BookOpen}
                         />
                     </div>
                 </div>
@@ -309,18 +303,18 @@ const LandingPage = () => {
             </section>
 
             {/* CTA Section */}
-            <section className="py-20">
-                <div className="container mx-auto px-6">
-                    <div className="bg-gradient-to-r from-indigo-900/50 to-purple-900/50 rounded-3xl p-12 text-center border border-white/10 relative overflow-hidden">
+            <section className="py-20 px-6">
+                <div className="container mx-auto max-w-5xl">
+                    <div className="bg-gradient-to-r from-indigo-900/50 to-purple-900/50 rounded-3xl p-8 md:p-12 text-center border border-white/10 relative overflow-hidden">
                         <div className="absolute inset-0 bg-grid-white/5 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))]" />
                         <div className="relative z-10">
-                            <h2 className="text-4xl font-bold mb-6">Ready to Boost Your Grades?</h2>
-                            <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
+                            <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Boost Your Grades?</h2>
+                            <p className="text-lg md:text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
                                 Join our community of high-achievers and start optimizing your study routine today.
                             </p>
                             <button
                                 onClick={() => handleNavigation('signup')}
-                                className="bg-white text-indigo-900 px-8 py-4 rounded-full font-bold text-lg hover:bg-indigo-50 transition-colors shadow-lg hover:shadow-white/20"
+                                className="w-full md:w-auto bg-white text-indigo-900 px-8 py-4 rounded-full font-bold text-lg hover:bg-indigo-50 transition-colors shadow-lg hover:shadow-white/20"
                             >
                                 Join StudyMind Free
                             </button>
@@ -332,7 +326,7 @@ const LandingPage = () => {
             {/* Footer */}
             <footer className="py-12 border-t border-white/10 bg-[#0a0c12]">
                 <div className="container mx-auto px-6 text-center text-gray-500 text-sm">
-                    <p>© 2024 StudyMind AI. All rights reserved.</p>
+                    <p>© 2025 StudyMind AI. All rights reserved.</p>
                 </div>
             </footer>
         </div>
