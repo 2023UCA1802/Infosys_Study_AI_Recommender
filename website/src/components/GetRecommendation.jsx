@@ -24,11 +24,11 @@ const GetRecommendation = () => {
     const [recommendationData, setRecommendationData] = useState(null);
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
-        Hours_Studied: 0,
-        Attendance: 0,
-        Tutoring_Sessions: 0,
-        Physical_Activity: 0,
-        Sleep_Hours: 0,
+        Hours_Studied: '',
+        Attendance: '',
+        Tutoring_Sessions: '',
+        Physical_Activity: '',
+        Sleep_Hours: '',
         Parental_Involvement: 'Medium',
         Access_to_Resources: 'High',
         Extracurricular_Activities: 'No'
@@ -39,10 +39,24 @@ const GetRecommendation = () => {
         if (['Parental_Involvement', 'Access_to_Resources', 'Extracurricular_Activities'].includes(name)) {
             setFormData(prev => ({ ...prev, [name]: value }));
         } else {
-            let numValue = parseFloat(value) || 0;
+            let newValue = value;
+
+            // Remove leading zero if it's followed by another digit (e.g., "05" -> "5")
+            if (newValue.length > 1 && newValue.startsWith('0') && newValue[1] !== '.') {
+                newValue = newValue.slice(1);
+            }
+
+            // Handle empty input
+            if (newValue === '') {
+                setFormData(prev => ({ ...prev, [name]: '' }));
+                return;
+            }
+
+            let numValue = parseFloat(newValue);
+            if (isNaN(numValue)) numValue = 0;
+
             // Enforce constraints
             if (numValue < 0) numValue = 0;
-
             if (name === 'Attendance' && numValue > 100) numValue = 100;
             if ((name === 'Hours_Studied' || name === 'Sleep_Hours') && numValue > 24) numValue = 24;
             if (name === 'Physical_Activity' && numValue > 7) numValue = 7;
@@ -52,17 +66,29 @@ const GetRecommendation = () => {
                 if (numValue > 100) numValue = 100;
             }
 
-            setFormData(prev => ({ ...prev, [name]: numValue }));
+            // Sync newValue if capped
+            if (numValue !== parseFloat(newValue)) {
+                newValue = numValue.toString();
+            }
+
+            setFormData(prev => ({ ...prev, [name]: newValue }));
         }
     };
 
     const fetchRecommendations = async () => {
         setLoading(true);
+
+        // Convert string values to numbers for API submission
+        const submissionData = { ...formData };
+        ['Hours_Studied', 'Attendance', 'Tutoring_Sessions', 'Physical_Activity', 'Sleep_Hours'].forEach(key => {
+            submissionData[key] = parseFloat(submissionData[key]) || 0;
+        });
+
         try {
             const response = await fetch('http://localhost:3000/api/recommend', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
+                body: JSON.stringify(submissionData)
             });
             const data = await response.json();
             if (data.success) {
@@ -167,23 +193,23 @@ const GetRecommendation = () => {
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-nord-2 mb-1">Hours Studied <span className="text-xs text-nord-3">(per DAY)</span></label>
-                                <input name="Hours_Studied" type="number" step="0.1" min="0" max="24" value={formData.Hours_Studied} onChange={handleInputChange} className="w-full p-2 border border-nord-4 rounded-lg bg-nord-6/50" />
+                                <input name="Hours_Studied" type="number" step="0.1" min="0" max="24" value={formData.Hours_Studied} onChange={handleInputChange} placeholder="0" className="w-full p-2 border border-nord-4 rounded-lg bg-nord-6/50" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-nord-2 mb-1">Attendance <span className="text-xs text-nord-3">(percentage over the SEMESTER)</span></label>
-                                <input name="Attendance" type="number" step="0.1" min="0" max="100" value={formData.Attendance} onChange={handleInputChange} className="w-full p-2 border border-nord-4 rounded-lg bg-nord-6/50" />
+                                <input name="Attendance" type="number" step="0.1" min="0" max="100" value={formData.Attendance} onChange={handleInputChange} placeholder="0" className="w-full p-2 border border-nord-4 rounded-lg bg-nord-6/50" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-nord-2 mb-1">Tutoring Sessions <span className="text-xs text-nord-3">(per WEEK)</span></label>
-                                <input name="Tutoring_Sessions" type="number" step="1" min="0" max="100" value={formData.Tutoring_Sessions} onChange={handleInputChange} className="w-full p-2 border border-nord-4 rounded-lg bg-nord-6/50" />
+                                <input name="Tutoring_Sessions" type="number" step="1" min="0" max="100" value={formData.Tutoring_Sessions} onChange={handleInputChange} placeholder="0" className="w-full p-2 border border-nord-4 rounded-lg bg-nord-6/50" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-nord-2 mb-1">Physical Activity <span className="text-xs text-nord-3">(days per WEEK)</span></label>
-                                <input name="Physical_Activity" type="number" step="0.1" min="0" max="7" value={formData.Physical_Activity} onChange={handleInputChange} className="w-full p-2 border border-nord-4 rounded-lg bg-nord-6/50" />
+                                <input name="Physical_Activity" type="number" step="0.1" min="0" max="7" value={formData.Physical_Activity} onChange={handleInputChange} placeholder="0" className="w-full p-2 border border-nord-4 rounded-lg bg-nord-6/50" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-nord-2 mb-1">Sleep Hours <span className="text-xs text-nord-3">(per DAY)</span></label>
-                                <input name="Sleep_Hours" type="number" step="0.1" min="0" max="24" value={formData.Sleep_Hours} onChange={handleInputChange} className="w-full p-2 border border-nord-4 rounded-lg bg-nord-6/50" />
+                                <input name="Sleep_Hours" type="number" step="0.1" min="0" max="24" value={formData.Sleep_Hours} onChange={handleInputChange} placeholder="0" className="w-full p-2 border border-nord-4 rounded-lg bg-nord-6/50" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-nord-2 mb-1">Parental Involvement <span className="text-xs text-nord-3">(overall)</span></label>

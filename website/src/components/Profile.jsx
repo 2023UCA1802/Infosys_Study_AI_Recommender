@@ -27,10 +27,10 @@ const Profile = () => {
         username: '',
         email: '',
         password: '',
-        studyHoursPerWeek: 25,
+        studyHoursPerWeek: '',
         image: '',
         dailyStudyHours: {
-            mon: 4, tue: 4, wed: 4, thu: 4, fri: 4, sat: 4, sun: 4
+            mon: '', tue: '', wed: '', thu: '', fri: '', sat: '', sun: ''
         }
     });
     const fileInputRef = useRef(null);
@@ -46,14 +46,21 @@ const Profile = () => {
             const response = await fetch(`http://localhost:3000/api/profile?userEmail=${email}`);
             const data = await response.json();
             if (data.success) {
+                const user = data.user;
                 setUserData({
-                    username: data.user.username || '',
-                    email: data.user.email || '',
+                    username: user.username || '',
+                    email: user.email || '',
                     password: '', // Don't populate password
-                    studyHoursPerWeek: data.user.studyHoursPerWeek || 25,
-                    image: data.user.image || '',
-                    dailyStudyHours: data.user.dailyStudyHours || {
-                        mon: 4, tue: 4, wed: 4, thu: 4, fri: 4, sat: 4, sun: 4
+                    studyHoursPerWeek: user.studyHoursPerWeek?.toString() || '',
+                    image: user.image || '',
+                    dailyStudyHours: {
+                        mon: user.dailyStudyHours?.mon?.toString() || '',
+                        tue: user.dailyStudyHours?.tue?.toString() || '',
+                        wed: user.dailyStudyHours?.wed?.toString() || '',
+                        thu: user.dailyStudyHours?.thu?.toString() || '',
+                        fri: user.dailyStudyHours?.fri?.toString() || '',
+                        sat: user.dailyStudyHours?.sat?.toString() || '',
+                        sun: user.dailyStudyHours?.sun?.toString() || '',
                     }
                 });
             }
@@ -64,7 +71,36 @@ const Profile = () => {
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setUserData(prev => ({ ...prev, [name]: value }));
+        if (name === 'studyHoursPerWeek') {
+            let newValue = value;
+
+            // Remove leading zero if it's followed by another digit (e.g., "05" -> "5")
+            if (newValue.length > 1 && newValue.startsWith('0') && newValue[1] !== '.') {
+                newValue = newValue.slice(1);
+            }
+
+            // Handle empty input
+            if (newValue === '') {
+                setUserData(prev => ({ ...prev, [name]: '' }));
+                return;
+            }
+
+            let numValue = parseFloat(newValue);
+            if (isNaN(numValue)) numValue = 0;
+
+            // Enforce constraints
+            if (numValue < 0) numValue = 0;
+            if (numValue > 168) numValue = 168;
+
+            // Sync newValue if capped
+            if (numValue !== parseFloat(newValue)) {
+                newValue = numValue.toString();
+            }
+
+            setUserData(prev => ({ ...prev, [name]: newValue }));
+        } else {
+            setUserData(prev => ({ ...prev, [name]: value }));
+        }
     };
 
     const handleImageChange = (e) => {
@@ -92,6 +128,12 @@ const Profile = () => {
             return;
         }
 
+        // Convert string values back to numbers for submission
+        const submissionDailyHours = {};
+        Object.keys(userData.dailyStudyHours).forEach(day => {
+            submissionDailyHours[day] = parseFloat(userData.dailyStudyHours[day]) || 0;
+        });
+
         try {
             const response = await fetch('http://localhost:3000/api/profile', {
                 method: 'PUT',
@@ -100,9 +142,9 @@ const Profile = () => {
                     userEmail: email,
                     username: userData.username,
                     password: userData.password,
-                    studyHoursPerWeek: userData.studyHoursPerWeek,
+                    studyHoursPerWeek: parseFloat(userData.studyHoursPerWeek) || 0,
                     image: userData.image,
-                    dailyStudyHours: userData.dailyStudyHours
+                    dailyStudyHours: submissionDailyHours
                 })
             });
             const data = await response.json();
@@ -222,6 +264,7 @@ const Profile = () => {
                                     value={userData.studyHoursPerWeek}
                                     onChange={handleInputChange}
                                     step="0.1"
+                                    placeholder="0"
                                     className="w-full p-2.5 border border-nord-4 rounded-lg bg-nord-6/50 focus:ring-2 focus:ring-nord-10/20 focus:outline-none transition-all"
                                 />
                             </div>
@@ -244,13 +287,38 @@ const Profile = () => {
                                                 max="24"
                                                 step="0.5"
                                                 value={userData.dailyStudyHours[day]}
-                                                onChange={(e) => setUserData(prev => ({
-                                                    ...prev,
-                                                    dailyStudyHours: {
-                                                        ...prev.dailyStudyHours,
-                                                        [day]: parseFloat(e.target.value) || 0
+                                                placeholder="0"
+                                                onChange={(e) => {
+                                                    let newValue = e.target.value;
+                                                    if (newValue.length > 1 && newValue.startsWith('0') && newValue[1] !== '.') {
+                                                        newValue = newValue.slice(1);
                                                     }
-                                                }))}
+
+                                                    if (newValue === '') {
+                                                        setUserData(prev => ({
+                                                            ...prev,
+                                                            dailyStudyHours: { ...prev.dailyStudyHours, [day]: '' }
+                                                        }));
+                                                        return;
+                                                    }
+
+                                                    let numValue = parseFloat(newValue);
+                                                    if (isNaN(numValue)) numValue = 0;
+                                                    if (numValue < 0) numValue = 0;
+                                                    if (numValue > 24) numValue = 24;
+
+                                                    if (numValue !== parseFloat(newValue)) {
+                                                        newValue = numValue.toString();
+                                                    }
+
+                                                    setUserData(prev => ({
+                                                        ...prev,
+                                                        dailyStudyHours: {
+                                                            ...prev.dailyStudyHours,
+                                                            [day]: newValue
+                                                        }
+                                                    }));
+                                                }}
                                                 className="w-full p-2 border border-nord-4 rounded-lg bg-nord-6/50 focus:ring-2 focus:ring-nord-10/20 focus:outline-none text-center text-sm"
                                             />
                                         </div>
