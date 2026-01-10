@@ -20,7 +20,7 @@ const port = 3000;
 
 
 
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: "50mb" }));
 
 client.connect().then(() => {
   const db = client.db(dbname);
@@ -807,12 +807,137 @@ router.post("/api/study-logs", async (req, res) => {
     };
 
     const result = await collection.insertOne(newLog);
-    res.status(201).json({ success: true, message: "Study log added", log: { ...newLog, _id: result.insertedId } });
+    res.status(201).json({ success: true, message: "Study log added successfully", log: { ...newLog, _id: result.insertedId } });
   } catch (error) {
     console.error("Error adding study log:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 });
+
+
+
+
+// Support / Q&A Endpoints
+
+// POST: Create Support Query
+router.post("/api/support", async (req, res) => {
+  const { userEmail, subject, message } = req.body;
+  const db = client.db(dbname);
+  const collection = db.collection("SupportQueries");
+
+  try {
+    const newQuery = {
+      userEmail,
+      subject,
+      message,
+      reply: null,
+      status: "Pending",
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    const result = await collection.insertOne(newQuery);
+    res.status(201).json({ success: true, message: "Query submitted successfully", query: { ...newQuery, _id: result.insertedId } });
+  } catch (error) {
+    console.error("Error submitting support query:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+// GET: Get User's Support Queries
+router.get("/api/support", async (req, res) => {
+  const { userEmail } = req.query;
+  const db = client.db(dbname);
+  const collection = db.collection("SupportQueries");
+
+  try {
+    const queries = await collection.find({ userEmail }).sort({ createdAt: -1 }).toArray();
+    res.json({ success: true, queries });
+  } catch (error) {
+    console.error("Error fetching support queries:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+// GET: Get All Support Queries (Admin)
+router.get("/api/admin/support", async (req, res) => {
+  const db = client.db(dbname);
+  const collection = db.collection("SupportQueries");
+
+  try {
+    const queries = await collection.find({}).sort({ createdAt: -1 }).toArray();
+    res.json({ success: true, queries });
+  } catch (error) {
+    console.error("Error fetching all support queries:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+// PUT: Admin Reply to Query
+router.put("/api/admin/support/:id/reply", async (req, res) => {
+  const { id } = req.params;
+  const { reply } = req.body;
+  const db = client.db(dbname);
+  const collection = db.collection("SupportQueries");
+
+  try {
+    const result = await collection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { reply, status: "Replied", updatedAt: new Date() } }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ success: false, message: "Query not found" });
+    }
+
+    res.json({ success: true, message: "Reply submitted successfully" });
+  } catch (error) {
+    console.error("Error replying to query:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+// POST: Admin Send Message to Student
+router.post("/api/admin/support/message", async (req, res) => {
+  const { userEmail, subject, message } = req.body;
+  const db = client.db(dbname);
+  const collection = db.collection("SupportQueries");
+
+  try {
+    const newMessage = {
+      userEmail, // Recipient student
+      subject,
+      message, // Admin's message
+      reply: null,
+      isFromAdmin: true, // Flag to distinguish
+      status: "Admin Message",
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    const result = await collection.insertOne(newMessage);
+    res.status(201).json({ success: true, message: "Message sent successfully", query: { ...newMessage, _id: result.insertedId } });
+  } catch (error) {
+    console.error("Error sending admin message:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+// GET: List of Students for Admin Dropdown
+router.get("/api/admin/students/list", async (req, res) => {
+  const db = client.db(dbname);
+  const collection = db.collection("Users");
+
+  try {
+    const students = await collection.find({ role: { $ne: "admin" } }).project({ email: 1, username: 1 }).sort({ email: 1 }).toArray();
+    res.json({ success: true, students });
+  } catch (error) {
+    console.error("Error fetching student list:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+
 
 // GET: Get User's Study Logs
 router.get("/api/study-logs", async (req, res) => {

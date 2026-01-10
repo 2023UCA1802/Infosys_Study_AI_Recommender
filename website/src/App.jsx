@@ -21,6 +21,8 @@ import Profile from "./components/Profile.jsx";
 import StudyTracker from "./components/StudyTracker.jsx";
 import AdminFeedback from "./components/AdminFeedback.jsx";
 import LandingPage from "./components/LandingPage.jsx";
+import Support from "./components/Support.jsx";
+import AdminSupport from "./components/AdminSupport.jsx";
 
 function App() {
   const { isLoggedIn, setIsLoggedIn, setEmail, email, setUsername, loading, setRole, setImage } = useAuth();
@@ -90,6 +92,8 @@ function App() {
                 <Route path="/profile" element={<PageTransition><Profile /></PageTransition>} />
                 <Route path="/study-tracker" element={<PageTransition><StudyTracker /></PageTransition>} />
                 <Route path="/admin/feedback" element={<PageTransition><AdminFeedback /></PageTransition>} />
+                <Route path="/support" element={<PageTransition><Support /></PageTransition>} />
+                <Route path="/admin/support" element={<PageTransition><AdminSupport /></PageTransition>} />
                 <Route path="/navbar" element={<PageTransition><Navbar /></PageTransition>} />
               </Routes>
             </AnimatePresence>

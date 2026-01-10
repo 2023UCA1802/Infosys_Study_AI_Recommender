@@ -10,7 +10,8 @@ import {
     Target,
     Clock,
     LogOut,
-    Brain
+    Brain,
+    HelpCircle
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -78,11 +79,15 @@ const Sidebar = ({ isOpen, onClose }) => {
                             <SidebarItem icon={Calendar} label="Schedule" path="/schedule" activeTab={activeTab} navigate={navigate} onClose={onClose} />
                             <SidebarItem icon={Target} label="Goals" path="/goals" activeTab={activeTab} navigate={navigate} onClose={onClose} />
                             <SidebarItem icon={Clock} label="Study Tracker" path="/study-tracker" activeTab={activeTab} navigate={navigate} onClose={onClose} />
+                            <SidebarItem icon={HelpCircle} label="Support" path="/support" activeTab={activeTab} navigate={navigate} onClose={onClose} />
                         </>
                     )}
                     {/* Admin specific sidebar items */}
                     {role === 'admin' && (
-                        <SidebarItem icon={MessageSquare} label="Feedback" path="/admin/feedback" activeTab={activeTab} navigate={navigate} onClose={onClose} />
+                        <>
+                            <SidebarItem icon={MessageSquare} label="Feedback" path="/admin/feedback" activeTab={activeTab} navigate={navigate} onClose={onClose} />
+                            <SidebarItem icon={HelpCircle} label="Support Center" path="/admin/support" activeTab={activeTab} navigate={navigate} onClose={onClose} />
+                        </>
                     )}
                 </nav>
             </div>

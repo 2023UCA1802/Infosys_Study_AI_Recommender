@@ -129,16 +129,94 @@ const Schedule = () => {
         return `${year}-${month}-${day}`;
     };
 
-    const getTasksForHour = (hour) => {
-        const dateString = formatLocalDate(selectedDate);
-        return tasks.filter(task => {
-            const taskDate = task.date; // stored as YYYY-MM-DD
-            if (taskDate !== dateString) return false;
 
-            const startHour = parseInt(task.startTime.split(':')[0]);
-            return startHour === hour;
-        });
+
+    const getTasksForDate = () => {
+        const dateString = formatLocalDate(selectedDate);
+        return tasks.filter(task => task.date === dateString);
     };
+
+    const calculateTaskLayout = (tasksForDate) => {
+        // Sort tasks by start time
+        const sortedTasks = [...tasksForDate].sort((a, b) => {
+            const startA = convertToMinutes(a.startTime);
+            const startB = convertToMinutes(b.startTime);
+            return startA - startB;
+        });
+
+        const columns = [];
+        const layout = {};
+
+        sortedTasks.forEach(task => {
+            // Find the first column where this task fits without overlapping
+            let columnIndex = 0;
+            let placed = false;
+
+            const startMins = convertToMinutes(task.startTime);
+            const endMins = convertToMinutes(task.endTime);
+
+            while (!placed) {
+                if (!columns[columnIndex]) {
+                    columns[columnIndex] = [];
+                }
+
+                // Check for overlap with any task in this column
+                const hasOverlap = columns[columnIndex].some(existingTask => {
+                    const existingStart = convertToMinutes(existingTask.startTime);
+                    const existingEnd = convertToMinutes(existingTask.endTime);
+                    return startMins < existingEnd && endMins > existingStart;
+                });
+
+                if (!hasOverlap) {
+                    columns[columnIndex].push(task);
+                    layout[task._id] = columnIndex;
+                    placed = true;
+                } else {
+                    columnIndex++;
+                }
+            }
+        });
+
+        return { columns, layout };
+    };
+
+    const convertToMinutes = (timeStr) => {
+        const [hours, mins] = timeStr.split(':').map(Number);
+        return (hours * 60) + mins;
+    };
+
+
+    const getTaskStyle = (task, columnIndex, totalColumns) => {
+        const [startHour, startMin] = task.startTime.split(':').map(Number);
+        const [endHour, endMin] = task.endTime.split(':').map(Number);
+
+        const startTotalMins = (startHour * 60) + startMin;
+        const endTotalMins = (endHour * 60) + endMin;
+        const durationMins = endTotalMins - startTotalMins;
+
+        // Row height is fixed at 60px
+        const pixelsPerMinute = 60 / 60; // 1px per minute
+
+        const top = startTotalMins * pixelsPerMinute;
+        const height = durationMins * pixelsPerMinute;
+
+        const widthPercent = 90 / totalColumns; // Leave some gap
+        const leftPercent = 10 + (columnIndex * widthPercent); // Offset from left labels + column offset
+
+        return {
+            top: `${top}px`,
+            height: `${Math.max(height, 20)}px`,
+            position: 'absolute',
+            left: `${leftPercent}%`,
+            width: `${widthPercent - 1}%`, // Small gap between
+            zIndex: 10
+        };
+    };
+
+    // Calculate layout for current view
+    const tasksForDate = getTasksForDate();
+    const { columns, layout } = calculateTaskLayout(tasksForDate);
+    const totalColumns = columns.length || 1;
 
 
 
@@ -217,47 +295,50 @@ const Schedule = () => {
                         <div className="p-4 border-b border-nord-4 bg-nord-6/30">
                             <h2 className="font-bold text-lg text-nord-1">Timeline</h2>
                         </div>
-                        <div className="max-h-[700px] overflow-y-auto custom-scrollbar">
-                            {hours.map(hour => (
-                                <div key={hour} className="flex group border-b border-nord-6 last:border-0 min-h-[60px]">
-                                    {/* Time Column */}
-                                    <div className="w-20 border-r border-nord-4/50 p-3 text-right">
-                                        <span className="text-xs font-medium text-nord-3">
-                                            {hour.toString().padStart(2, '0')}:00
-                                        </span>
+                        <div className="relative h-[1440px] custom-scrollbar overflow-y-auto" style={{ height: '700px' }}>
+                            {/* Background Grid */}
+                            <div className="absolute top-0 left-0 w-full h-[1440px]">
+                                {hours.map(hour => (
+                                    <div key={hour} className="flex border-b border-nord-4/30 h-[60px]">
+                                        {/* Time Label */}
+                                        <div className="w-[10%] min-w-[60px] border-r border-nord-4/50 p-2 text-right bg-nord-6/10">
+                                            <span className="text-xs font-medium text-nord-3 sticky left-0">
+                                                {hour.toString().padStart(2, '0')}:00
+                                            </span>
+                                        </div>
+                                        {/* Grid Row */}
+                                        <div className="flex-1 relative">
+                                            <div className="absolute top-1/2 left-0 w-full h-px border-t border-dashed border-nord-4/30 -z-10 opacity-50"></div>
+                                        </div>
                                     </div>
+                                ))}
+                            </div>
 
-                                    {/* Task Slot */}
-                                    <div className="flex-1 p-1 relative">
-                                        {/* Grid line helper */}
-                                        <div className="absolute top-1/2 left-0 w-full h-px bg-nord-6 -z-10"></div>
-
-                                        {getTasksForHour(hour).map(task => (
-                                            <motion.div
-                                                key={task._id}
-                                                initial={{ opacity: 0, scale: 0.95 }}
-                                                animate={{ opacity: 1, scale: 1 }}
-                                                className="bg-nord-10/10 border-l-4 border-nord-10 p-2 rounded-md mb-1 relative group/task hover:bg-nord-10/20 transition-colors cursor-pointer"
+                            {/* Events Layer */}
+                            <div className="absolute top-0 left-0 w-full h-[1440px] pointer-events-none">
+                                {tasksForDate.map(task => (
+                                    <motion.div
+                                        key={task._id}
+                                        initial={{ opacity: 0, scale: 0.95 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        style={getTaskStyle(task, layout[task._id], totalColumns)}
+                                        className="bg-nord-10 border-l-4 border-nord-9 p-2 rounded-md shadow-md hover:brightness-110 transition-all cursor-pointer overflow-hidden pointer-events-auto group/task"
+                                    >
+                                        <div className="flex justify-between items-start h-full">
+                                            <div className="overflow-hidden">
+                                                <h4 className="text-xs font-bold text-white line-clamp-1">{task.title}</h4>
+                                                <p className="text-[10px] text-white/90 line-clamp-1">{task.startTime} - {task.endTime}</p>
+                                            </div>
+                                            <button
+                                                onClick={(e) => handleDelete(task._id, e)}
+                                                className="text-white/70 hover:text-white transition-colors opacity-0 group-hover/task:opacity-100"
                                             >
-                                                <div className="flex justify-between items-start">
-                                                    <div>
-                                                        <h4 className="text-sm font-bold text-nord-1 line-clamp-1">{task.title}</h4>
-                                                        <p className="text-xs text-nord-3 line-clamp-1">{task.startTime} - {task.endTime}</p>
-                                                    </div>
-                                                    <button
-                                                        onClick={(e) => handleDelete(task._id, e)}
-                                                        className="opacity-0 group-hover/task:opacity-100 p-1 text-nord-11 hover:bg-white rounded transition-all"
-                                                    >
-                                                        <Trash2 size={14} />
-                                                    </button>
-                                                </div>
-                                            </motion.div>
-                                        ))}
-
-                                        {/* Add simplified "Add" button on hover for empty slots could go here, but sticking to main button for simplicity */}
-                                    </div>
-                                </div>
-                            ))}
+                                                <Trash2 size={12} />
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </div>
