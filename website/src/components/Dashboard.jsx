@@ -15,7 +15,9 @@ import {
   School,
   Mail,
   Clock,
-  LogOut
+  LogOut,
+  Download,
+  FileDown
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import StudentStatsModal from './StudentStatsModal';
@@ -25,6 +27,7 @@ const DashboardHome = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [students, setStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [downloading, setDownloading] = useState(false);
   const navigate = useNavigate();
 
   // Animation variants
@@ -67,6 +70,44 @@ const DashboardHome = () => {
     }
   }, [role]);
 
+  const handleDownloadReport = async (e, student) => {
+    e.stopPropagation();
+    try {
+      const response = await fetch(`http://localhost:3000/api/admin/reports/student/${encodeURIComponent(student.email)}`);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Monthly_Report_${student.username.replace(/\s+/g, '_')}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error("Error downloading report:", error);
+    }
+  };
+
+  const handleDownloadAllReports = async () => {
+    setDownloading(true);
+    try {
+      const response = await fetch("http://localhost:3000/api/admin/reports/all");
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = "All_Students_Monthly_Report.csv";
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error("Error downloading bulk report:", error);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
 
 
   const FeatureCard = ({ title, description, icon: Icon, color, path, onClick }) => (
@@ -98,9 +139,28 @@ const DashboardHome = () => {
           animate="visible"
           className="space-y-8"
         >
-          <motion.div variants={itemVariants} className="mb-8">
-            <h2 className="text-2xl font-bold text-nord-1 mb-2">Registered Students</h2>
-            <p className="text-nord-3">Overview of all students registered in the system.</p>
+          <motion.div variants={itemVariants} className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-bold text-nord-1 mb-2">Registered Students</h2>
+              <p className="text-nord-3">Overview of all students registered in the system.</p>
+            </div>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleDownloadAllReports}
+              disabled={downloading || students.length === 0}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all shadow-sm ${downloading
+                ? 'bg-nord-4 text-nord-3 cursor-not-allowed'
+                : 'bg-nord-10 text-white hover:bg-nord-9 hover:shadow-md'
+                }`}
+            >
+              {downloading ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              ) : (
+                <FileDown size={20} />
+              )}
+              <span>Download All Reports</span>
+            </motion.button>
           </motion.div>
 
           <div className="bg-white rounded-xl shadow-sm border border-nord-4 overflow-hidden">
@@ -112,6 +172,7 @@ const DashboardHome = () => {
                     <th className="p-4 font-semibold text-center">Goals Completed</th>
                     <th className="p-4 font-semibold text-center">Study Hours</th>
                     <th className="p-4 font-semibold text-center">Focus Score</th>
+                    <th className="p-4 font-semibold text-right">Report</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-nord-4">
@@ -157,6 +218,17 @@ const DashboardHome = () => {
                             />
                           </div>
                         </div>
+                      </td>
+                      <td className="p-4 text-right">
+                        <motion.button
+                          whileHover={{ scale: 1.1, color: '#5E81AC' }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={(e) => handleDownloadReport(e, student)}
+                          className="p-2 text-nord-10 hover:bg-nord-10/10 rounded-lg transition-colors"
+                          title="Download Student Report"
+                        >
+                          <Download size={20} />
+                        </motion.button>
                       </td>
                     </tr>
                   ))}

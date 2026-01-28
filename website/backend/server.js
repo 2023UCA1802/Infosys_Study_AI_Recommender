@@ -1139,6 +1139,111 @@ router.post("/api/recommend", (req, res) => {
   });
 });
 
+// Report Generation Endpoints
+
+// GET: Download Single Student Report (CSV)
+router.get("/api/admin/reports/student/:email", async (req, res) => {
+  const { email } = req.params;
+  const db = client.db(dbname);
+  const usersCollection = db.collection("Users");
+  const goalsCollection = db.collection("Goals");
+  const studyLogsCollection = db.collection("StudyLogs");
+
+  try {
+    const user = await usersCollection.findOne({ email });
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    const goals = await goalsCollection.find({ userEmail: email }).toArray();
+    const completedGoals = goals.filter(g => g.status === "Finished" || g.progress === 100).length;
+    
+    const studyLogs = await studyLogsCollection.find({ userEmail: email }).toArray();
+    let totalStudyTime = 0;
+    studyLogs.forEach(log => {
+      if (log.startTime && log.endTime) {
+        const startParts = log.startTime.split(':');
+        const endParts = log.endTime.split(':');
+        const startMinutes = parseInt(startParts[0]) * 60 + parseInt(startParts[1] || 0);
+        const endMinutes = parseInt(endParts[0]) * 60 + parseInt(endParts[1] || 0);
+        totalStudyTime += (endMinutes - startMinutes);
+      }
+    });
+    const totalStudyHours = (totalStudyTime / 60).toFixed(1);
+
+    // Focus Score calculation (reusing logic from /api/admin/students)
+    let focusScore = 50 + (completedGoals * 5);
+    if (focusScore > 100) focusScore = 100;
+    if (goals.length === 0 && studyLogs.length > 0) focusScore = 60;
+    if (goals.length === 0 && studyLogs.length === 0) focusScore = 0;
+
+    const csvContent = 
+      "Monthly Study Report\n" +
+      `Student Name,${user.username}\n` +
+      `Email,${user.email}\n` +
+      `Report Date,${new Date().toLocaleDateString()}\n\n` +
+      "Metric,Value\n" +
+      `Total Goals,${goals.length}\n` +
+      `Completed Goals,${completedGoals}\n` +
+      `Total Study Hours,${totalStudyHours}h\n` +
+      `Focus Score,${focusScore}%\n`;
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename=Monthly_Report_${user.username.replace(/\s+/g, '_')}.csv`);
+    res.status(200).send(csvContent);
+  } catch (error) {
+    console.error("Error generating student report:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+// GET: Download All Students Report (CSV)
+router.get("/api/admin/reports/all", async (req, res) => {
+  const db = client.db(dbname);
+  const usersCollection = db.collection("Users");
+  const goalsCollection = db.collection("Goals");
+  const studyLogsCollection = db.collection("StudyLogs");
+
+  try {
+    const students = await usersCollection.find({ role: { $ne: "admin" } }).toArray();
+    
+    let csvContent = "All Students Monthly Report\n";
+    csvContent += `Generated Date,${new Date().toLocaleDateString()}\n\n`;
+    csvContent += "Student Name,Email,Total Goals,Completed Goals,Study Hours,Focus Score\n";
+
+    for (const student of students) {
+      const email = student.email;
+      const goals = await goalsCollection.find({ userEmail: email }).toArray();
+      const completedGoals = goals.filter(g => g.status === "Finished" || g.progress === 100).length;
+      
+      const studyLogs = await studyLogsCollection.find({ userEmail: email }).toArray();
+      let totalStudyTime = 0;
+      studyLogs.forEach(log => {
+        if (log.startTime && log.endTime) {
+          const startParts = log.startTime.split(':');
+          const endParts = log.endTime.split(':');
+          const startMinutes = parseInt(startParts[0]) * 60 + parseInt(startParts[1] || 0);
+          const endMinutes = parseInt(endParts[0]) * 60 + parseInt(endParts[1] || 0);
+          totalStudyTime += (endMinutes - startMinutes);
+        }
+      });
+      const totalStudyHours = (totalStudyTime / 60).toFixed(1);
+
+      let focusScore = 50 + (completedGoals * 5);
+      if (focusScore > 100) focusScore = 100;
+      if (goals.length === 0 && studyLogs.length > 0) focusScore = 60;
+      if (goals.length === 0 && studyLogs.length === 0) focusScore = 0;
+
+      csvContent += `"${student.username}","${student.email}",${goals.length},${completedGoals},${totalStudyHours},${focusScore}%\n`;
+    }
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=All_Students_Monthly_Report.csv');
+    res.status(200).send(csvContent);
+  } catch (error) {
+    console.error("Error generating bulk report:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);
 });
