@@ -1,7 +1,7 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Mail, Lock, CheckCircle, GraduationCap, BookOpen, Clock, Globe } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const Forgot = ({ onLoginSuccess }) => {
     const [isConfirmFocused, setIsConfirmFocused] = useState(false);
@@ -17,8 +17,6 @@ const Forgot = ({ onLoginSuccess }) => {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const inputsRef = useRef([]);
-    const passwordRef = useRef();
-    const passwordRef1 = useRef();
     const navigate = useNavigate();
 
     const handlechange = (e, index) => {
@@ -43,24 +41,27 @@ const Forgot = ({ onLoginSuccess }) => {
     const signup = async () => {
         setLoading(true);
         setMessage("");
-        const response = await fetch("http://localhost:3000/send-emailforgot", {
-            credentials: "include",
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ email: email })
-        });
-        setLoading(false);
-        const data = await response.json();
-        if (data.success) {
-            setStep("otp");
-            setTimer(120);
-            setCanResend(false);
-            setOtp(Array(6).fill(""));
-            inputsRef.current[0]?.focus();
-        } else {
-            setMessage("Failed to send OTP. Please try again.");
+        try {
+            const response = await fetch("http://localhost:3000/send-emailforgot", {
+                credentials: "include",
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: email })
+            });
+            const data = await response.json();
+            if (data.success) {
+                setStep("otp");
+                setTimer(120);
+                setCanResend(false);
+                setOtp(Array(6).fill(""));
+                setTimeout(() => inputsRef.current[0]?.focus(), 100);
+            } else {
+                setMessage("Failed to send OTP. Please try again.");
+            }
+        } catch (err) {
+            setMessage("Connection error. Please check your internet.");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -73,14 +74,10 @@ const Forgot = ({ onLoginSuccess }) => {
         }
         else if (e.key === 'ArrowLeft') {
             e.preventDefault();
-            if (index > 0) {
-                inputsRef.current[index - 1].focus();
-            }
+            if (index > 0) inputsRef.current[index - 1].focus();
         } else if (e.key === 'ArrowRight') {
             e.preventDefault();
-            if (index < otp.length - 1) {
-                inputsRef.current[index + 1].focus();
-            }
+            if (index < otp.length - 1) inputsRef.current[index + 1].focus();
         }
     };
 
@@ -90,9 +87,7 @@ const Forgot = ({ onLoginSuccess }) => {
             const newOtp = paste.split('').slice(0, 6);
             setOtp(newOtp);
             newOtp.forEach((val, idx) => {
-                if (inputsRef.current[idx]) {
-                    inputsRef.current[idx].value = val;
-                }
+                if (inputsRef.current[idx]) inputsRef.current[idx].value = val;
             });
             inputsRef.current[5].focus();
         }
@@ -107,9 +102,7 @@ const Forgot = ({ onLoginSuccess }) => {
         const response = await fetch('http://localhost:3000/signupforgot', {
             credentials: 'include',
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 email: email,
                 password: password,
@@ -125,7 +118,6 @@ const Forgot = ({ onLoginSuccess }) => {
         }
     };
 
-
     const formatTime = (sec) => {
         const m = Math.floor(sec / 60).toString().padStart(2, '0');
         const s = (sec % 60).toString().padStart(2, '0');
@@ -137,9 +129,7 @@ const Forgot = ({ onLoginSuccess }) => {
         await fetch("http://localhost:3000/send-emailforgot", {
             credentials: "include",
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email: email })
         });
         setTimer(120);
@@ -156,9 +146,7 @@ const Forgot = ({ onLoginSuccess }) => {
         const response = await fetch('http://localhost:3000/change-password', {
             credentials: 'include',
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 email: email,
                 password: password,
@@ -185,124 +173,160 @@ const Forgot = ({ onLoginSuccess }) => {
 
     const getStepTitle = () => {
         switch (step) {
-            case "email": return "Reset Password";
+            case "email": return "Forgot Password?";
             case "otp": return "Verify Email";
-            case "success": return "Create New Password";
+            case "success": return "Set New Password";
             default: return "Reset Password";
         }
     };
 
     const getStepDescription = () => {
         switch (step) {
-            case "email": return "Enter your email address to receive a verification code";
-            case "otp": return `Enter the 6-digit code sent to your email`;
-            case "success": return "Choose a strong password for your account";
+            case "email": return "Enter your email to receive a recovery code.";
+            case "otp": return `We've sent a 6-digit code to ${email}`;
+            case "success": return "Create a strong password to secure your account.";
             default: return "";
         }
     };
 
     return (
-        <div className="min-h-screen w-full flex items-center justify-center p-4 bg-[#0f111a] text-white relative overflow-hidden font-sans selection:bg-indigo-500/30">
-            {/* Abstract Background Elements */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-600/20 rounded-full blur-[120px]" />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/20 rounded-full blur-[120px]" />
-                <div className="absolute top-[40%] left-[30%] w-[30%] h-[30%] bg-blue-600/10 rounded-full blur-[100px]" />
+        <div className="min-h-screen w-full flex flex-col items-center justify-center p-6 bg-[#f0f7ff] text-[#1a1c1e] relative overflow-hidden font-sans">
+
+            {/* Background Image Layer */}
+            <div
+                className="absolute inset-0 z-0 opacity-60 scale-110"
+                style={{
+                    backgroundImage: `url('/cloud_background.png')`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    filter: 'blur(10px)'
+                }}
+            />
+
+            {/* Floating Decorative Elements */}
+            <div className="absolute inset-0 pointer-events-none z-1">
+                {[...Array(6)].map((_, i) => (
+                    <motion.div
+                        key={i}
+                        animate={{
+                            y: [0, -20, 0],
+                            x: [0, 10, 0],
+                            rotate: [0, 10, 0],
+                        }}
+                        transition={{
+                            duration: 5 + i,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                            delay: i * 0.5
+                        }}
+                        className="absolute opacity-20"
+                        style={{
+                            top: `${Math.random() * 80 + 10}%`,
+                            left: `${Math.random() * 80 + 10}%`,
+                        }}
+                    >
+                        {i % 4 === 0 && <BookOpen className="w-12 h-12 text-blue-400" />}
+                        {i % 4 === 1 && <GraduationCap className="w-16 h-16 text-indigo-400" />}
+                        {i % 4 === 2 && <Clock className="w-10 h-10 text-blue-500" />}
+                        {i % 4 === 3 && <Globe className="w-14 h-14 text-indigo-300" />}
+                    </motion.div>
+                ))}
             </div>
 
-            <button
-                onClick={() => navigate("/")}
-                className="absolute top-6 left-6 p-2 rounded-full bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-all duration-300 backdrop-blur-sm border border-white/5 z-20 group"
-            >
-                <ArrowLeft className="w-6 h-6 group-hover:-translate-x-1 transition-transform" />
-            </button>
-
-            {/* Minimalistic Container - Glassmorphism */}
-            <div className="w-full max-w-md relative z-10">
-                {/* Header */}
-                <div className="text-center mb-10">
-                    <h1 className="text-5xl font-extralight text-white mb-2 tracking-tight">StudyMind</h1>
-                    <p className="text-white/70 text-sm uppercase tracking-widest">Study Schedule Recommender</p>
+            {/* Top Branding */}
+            <div className="absolute top-8 left-8 flex items-center gap-3 z-20">
+                <div className="p-2 bg-white rounded-xl shadow-sm border border-white/50">
+                    <GraduationCap className="w-6 h-6 text-[#1a1c1e]" />
                 </div>
+                <span className="text-xl font-semibold tracking-tight">StudyMind</span>
+            </div>
 
-                {/* Form Container */}
-                <div className="bg-black/30 backdrop-blur-xl rounded-2xl p-8 border border-white/10 shadow-2xl">
+            <motion.button
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                onClick={() => navigate("/login")}
+                className="absolute top-8 right-8 p-3 rounded-full bg-white/40 hover:bg-white/60 text-[#1a1c1e]/70 hover:text-[#1a1c1e] transition-all duration-300 backdrop-blur-md border border-white/40 z-20 group"
+            >
+                <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+            </motion.button>
 
-                    {/* Title */}
-                    <div className="mb-8 text-center">
-                        <h2 className="text-2xl font-light text-white mb-2">
+            <motion.div
+                initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                className="w-full max-w-sm relative z-10"
+            >
+                <div className="bg-white/60 backdrop-blur-3xl rounded-[2.5rem] p-10 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] border border-white/80 overflow-hidden">
+
+                    <div className="text-center mb-10">
+                        <div className="flex justify-center mb-6">
+                            <motion.div
+                                initial={{ rotate: -10, scale: 0.9 }}
+                                animate={{ rotate: 0, scale: 1 }}
+                                className="bg-white p-4 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100"
+                            >
+                                <Lock className="w-8 h-8 text-[#1a1c1e]" />
+                            </motion.div>
+                        </div>
+                        <h2 className="text-xl font-bold text-[#1a1c1e] mb-3 tracking-tight">
                             {getStepTitle()}
                         </h2>
-                        <p className="text-white/60 text-sm">
+                        <p className="text-gray-500 text-xs leading-relaxed px-2">
                             {getStepDescription()}
                         </p>
                     </div>
 
-                    {/* Error Message */}
-                    {message && (
-                        <div className="mb-6 p-3 bg-red-500/20 border border-red-500/50 rounded-lg backdrop-blur-sm">
-                            <p className="text-red-200 text-sm text-center">{message}</p>
-                        </div>
-                    )}
+                    <AnimatePresence mode="wait">
+                        {message && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="mb-6 overflow-hidden"
+                            >
+                                <div className="p-4 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-sm text-center font-medium">
+                                    {message}
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
 
-                    {/* Step 1: Email */}
-                    {step === "email" && (
-                        <div className="space-y-8">
-                            <div className="group">
-                                <input
-                                    className="w-full bg-transparent border-b border-white/20 px-0 py-3 text-white placeholder-white/40 focus:outline-none focus:border-indigo-400 transition-colors"
-                                    onChange={handlechange}
-                                    value={email}
-                                    placeholder='Email Address'
-                                    type="email"
-                                    name="email"
-                                    disabled={loading}
-                                />
-                            </div>
+                    <div className="space-y-6">
+                        {step === "email" && (
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                                <div className="relative">
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                                        <Mail className="w-5 h-5" />
+                                    </div>
+                                    <input
+                                        className="w-full bg-gray-100/50 border-none rounded-2xl pl-12 pr-4 py-4 text-[#1a1c1e] placeholder-gray-400 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none"
+                                        onChange={handlechange}
+                                        value={email}
+                                        placeholder='Email Address'
+                                        type="email"
+                                        name="email"
+                                        disabled={loading}
+                                    />
+                                </div>
 
-                            <div className="flex flex-col gap-3">
-                                <button
+                                <motion.button
+                                    whileHover={{ scale: 1.01 }}
+                                    whileTap={{ scale: 0.99 }}
                                     onClick={signup}
                                     disabled={loading}
-                                    className={`w-full rounded-xl py-3.5 font-medium transition-all duration-300 border border-white/10 ${loading
-                                        ? 'bg-white/10 text-white/50 cursor-not-allowed'
-                                        : 'bg-white/10 hover:bg-white/20 text-white hover:scale-[1.02] active:scale-[0.98]'
+                                    className={`w-full rounded-2xl py-4 font-bold transition-all duration-300 shadow-lg ${loading
+                                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
+                                        : 'bg-[#1a1c1e] hover:bg-black text-white shadow-black/10'
                                         }`}
                                 >
-                                    {loading ? (
-                                        <span className="flex items-center justify-center gap-2">
-                                            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
-                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                            </svg>
-                                            Sending...
-                                        </span>
-                                    ) : (
-                                        "Send Verification Code"
-                                    )}
-                                </button>
-                                <button
-                                    onClick={() => navigate("/login")}
-                                    className="w-full rounded-xl py-3.5 font-medium text-white/50 hover:text-white transition-colors text-sm"
-                                >
-                                    Back to Login
-                                </button>
-                            </div>
-                        </div>
-                    )}
+                                    {loading ? "Sending..." : "Send Reset Code"}
+                                </motion.button>
+                            </motion.div>
+                        )}
 
-                    {/* Step 2: OTP Verification */}
-                    {step === "otp" && (
-                        <div className="space-y-6">
-                            <div className="space-y-4">
-                                <button
-                                    onClick={() => setStep("email")}
-                                    className="text-xs text-indigo-300 hover:text-indigo-200 block mx-auto transition-colors"
-                                >
-                                    Wrong email? Change address
-                                </button>
-
-                                <div className='flex gap-2 justify-center mb-6'>
+                        {step === "otp" && (
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+                                <div className='flex gap-2 justify-center'>
                                     {otp.map((digit, index) => (
                                         <input
                                             key={index}
@@ -313,7 +337,7 @@ const Forgot = ({ onLoginSuccess }) => {
                                             onChange={(e) => handlechange(e, index)}
                                             onKeyDown={(e) => handleBackspace(e, index)}
                                             ref={(el) => (inputsRef.current[index] = el)}
-                                            className='w-10 h-14 md:w-12 md:h-16 text-2xl text-center bg-transparent border-b-2 border-white/20 text-white focus:outline-none focus:border-indigo-400 font-light transition-all placeholder-white/10'
+                                            className='w-10 h-14 text-2xl text-center bg-gray-100/50 rounded-xl text-[#1a1c1e] focus:ring-2 focus:ring-blue-500/20 outline-none transition-all font-semibold'
                                         />
                                     ))}
                                 </div>
@@ -322,123 +346,73 @@ const Forgot = ({ onLoginSuccess }) => {
                                     <button
                                         onClick={handleResendOtp}
                                         disabled={!canResend}
-                                        className={`text-xs transition-colors ${canResend
-                                            ? 'text-indigo-300 hover:text-indigo-200 cursor-pointer'
-                                            : 'text-white/30 cursor-not-allowed'
+                                        className={`text-sm font-medium transition-colors ${canResend ? 'text-blue-600 hover:text-blue-700' : 'text-gray-400'
                                             }`}
                                     >
-                                        {canResend ? (
-                                            <span className="flex items-center justify-center gap-1">
-                                                Resend Code
-                                            </span>
-                                        ) : (
-                                            <span className="flex items-center justify-center gap-1">
-                                                Resend in {formatTime(timer)}
-                                            </span>
-                                        )}
+                                        {canResend ? "Resend Code" : `Resend in ${formatTime(timer)}`}
                                     </button>
                                 </div>
-                            </div>
 
-                            <div className="flex flex-col gap-3">
-                                <button
+                                <motion.button
+                                    whileHover={{ scale: 1.01 }}
+                                    whileTap={{ scale: 0.99 }}
                                     onClick={handleotp}
-                                    className="w-full rounded-xl py-3.5 font-medium bg-white/10 hover:bg-white/20 text-white border border-white/10 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                                    className="w-full rounded-2xl py-4 font-bold bg-[#1a1c1e] hover:bg-black text-white shadow-lg shadow-black/10 transition-all"
                                 >
-                                    Verify Code
-                                </button>
-                                <button
-                                    onClick={() => navigate("/")}
-                                    className="w-full rounded-xl py-3.5 font-medium text-white/50 hover:text-white transition-colors text-sm"
-                                >
-                                    Cancel
-                                </button>
-                            </div>
-                        </div>
-                    )}
+                                    Verify & Proceed
+                                </motion.button>
+                            </motion.div>
+                        )}
 
-                    {/* Step 3: New Password */}
-                    {step === "success" && (
-                        <div className="space-y-6">
-                            <div className="space-y-4">
-                                <div className="group relative">
+                        {step === "success" && (
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+                                <div className="relative">
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                                        <Lock className="w-5 h-5" />
+                                    </div>
                                     <input
-                                        ref={passwordRef}
-                                        className="w-full bg-transparent border-b border-white/20 px-0 py-3 text-white placeholder-white/40 focus:outline-none focus:border-indigo-400 transition-colors pr-10"
+                                        className="w-full bg-gray-100/50 border-none rounded-2xl pl-12 pr-4 py-4 text-[#1a1c1e] placeholder-gray-400 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none"
                                         onChange={handlechange}
                                         value={password}
                                         placeholder='New Password'
-                                        type={showPassword ? "text" : "password"}
+                                        type="password"
                                         name="password"
                                     />
-                                    <button
-                                        type="button"
-                                        className="absolute right-0 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                    >
-                                        {showPassword ? (
-                                            <svg className="w-5 h-5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                                            </svg>
-                                        ) : (
-                                            <svg className="w-5 h-5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                            </svg>
-                                        )}
-                                    </button>
                                 </div>
 
-                                <div className="group relative">
+                                <div className="relative">
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                                        <CheckCircle className="w-5 h-5" />
+                                    </div>
                                     <input
-                                        ref={passwordRef1}
-                                        className="w-full bg-transparent border-b border-white/20 px-0 py-3 text-white placeholder-white/40 focus:outline-none focus:border-indigo-400 transition-colors pr-10"
-                                        onFocus={() => setIsConfirmFocused(true)}
+                                        className="w-full bg-gray-100/50 border-none rounded-2xl pl-12 pr-4 py-4 text-[#1a1c1e] placeholder-gray-400 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none"
                                         onChange={(e) => setconfirmPassword(e.target.value)}
                                         value={confirmpassword}
                                         placeholder='Confirm Password'
-                                        type={showConfirmPassword ? "text" : "password"}
+                                        type="password"
                                         name="confirmpassword"
+                                        onFocus={() => setIsConfirmFocused(true)}
                                     />
-                                    <button
-                                        type="button"
-                                        className="absolute right-0 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors"
-                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                    >
-                                        {showConfirmPassword ? (
-                                            <svg className="w-5 h-5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                                            </svg>
-                                        ) : (
-                                            <svg className="w-5 h-5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                            </svg>
-                                        )}
-                                    </button>
                                 </div>
 
                                 {isConfirmFocused && password !== confirmpassword && confirmpassword && (
-                                    <p className='text-red-300/80 text-xs mt-1 flex items-center gap-1'>
-                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        Passwords do not match
-                                    </p>
+                                    <p className='text-red-500 text-xs font-medium px-2'>Passwords do not match</p>
                                 )}
-                            </div>
 
-                            <button
-                                onClick={handlelogin}
-                                disabled={!password || password !== confirmpassword}
-                                className="w-full rounded-xl py-3.5 font-medium bg-white/10 hover:bg-white/20 text-white border border-white/10 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                            >
-                                Reset Password
-                            </button>
-                        </div>
-                    )}
+                                <motion.button
+                                    whileHover={{ scale: 1.01 }}
+                                    whileTap={{ scale: 0.99 }}
+                                    onClick={handlelogin}
+                                    disabled={!password || password !== confirmpassword}
+                                    className="w-full rounded-2xl py-4 font-bold bg-[#1a1c1e] hover:bg-black text-white shadow-lg shadow-black/10 transition-all disabled:opacity-50"
+                                >
+                                    Update Password
+                                </motion.button>
+                            </motion.div>
+                        )}
+                    </div>
                 </div>
-            </div>
+            </motion.div>
         </div>
     );
 };

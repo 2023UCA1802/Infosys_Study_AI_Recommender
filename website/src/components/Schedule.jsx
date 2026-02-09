@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     Calendar as CalendarIcon,
     LayoutDashboard,
@@ -7,14 +7,18 @@ import {
     MessageSquare,
     Target,
     Settings,
-
     Plus,
     Trash2,
     Brain,
     Clock,
     ChevronLeft,
     ChevronRight,
-    LogOut
+    LogOut,
+    Zap,
+    ArrowRight,
+    Search,
+    ListPlus,
+    CheckCircle
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -26,6 +30,7 @@ const Schedule = () => {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [showForm, setShowForm] = useState(false);
+    const [loading, setLoading] = useState(false);
     const dateInputRef = useRef(null);
 
     // Form State
@@ -35,8 +40,33 @@ const Schedule = () => {
         endTime: '10:00',
         description: ''
     });
+    const [submitError, setSubmitError] = useState(null);
 
-    const hours = Array.from({ length: 24 }, (_, i) => i); // 0 to 23 hours
+    const hours = Array.from({ length: 24 }, (_, i) => i);
+
+    // Animation Variants
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.05
+            }
+        }
+    };
+
+    const itemVariants = {
+        hidden: { y: 20, opacity: 0 },
+        visible: {
+            y: 0,
+            opacity: 1,
+            transition: {
+                type: 'spring',
+                stiffness: 100,
+                damping: 15
+            }
+        }
+    };
 
     useEffect(() => {
         if (email) {
@@ -45,16 +75,17 @@ const Schedule = () => {
     }, [email]);
 
     const fetchTasks = async () => {
+        setLoading(true);
         try {
             const response = await fetch(`http://localhost:3000/api/schedule?userEmail=${email}`);
             const data = await response.json();
             if (data.success) {
-                // Convert string dates back to Date objects if needed, or just handle strings
-                // For simplified comparison, we'll assume tasks have a specific date string
                 setTasks(data.tasks);
             }
         } catch (error) {
             console.error("Error fetching schedule:", error);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -66,8 +97,6 @@ const Schedule = () => {
     const handleSubmit = async () => {
         if (!formData.title) return;
 
-        // Construct task object
-        // We need to attach the date to the time
         const payload = {
             userEmail: email,
             title: formData.title,
@@ -93,17 +122,19 @@ const Schedule = () => {
                     endTime: '10:00',
                     description: ''
                 });
+                setSubmitError(null);
             } else {
-                alert("Failed to add task");
+                setSubmitError(data.message || "Failed to add task");
             }
         } catch (error) {
             console.error("Error adding task:", error);
+            setSubmitError("A network error occurred. Please try again.");
         }
     };
 
     const handleDelete = async (id, e) => {
         e.stopPropagation();
-        if (!window.confirm("Delete this task?")) return;
+        if (!window.confirm("Purge this objective from the temporal stream?")) return;
 
         try {
             const response = await fetch(`http://localhost:3000/api/schedule/${id}`, {
@@ -129,15 +160,12 @@ const Schedule = () => {
         return `${year}-${month}-${day}`;
     };
 
-
-
     const getTasksForDate = () => {
         const dateString = formatLocalDate(selectedDate);
         return tasks.filter(task => task.date === dateString);
     };
 
     const calculateTaskLayout = (tasksForDate) => {
-        // Sort tasks by start time
         const sortedTasks = [...tasksForDate].sort((a, b) => {
             const startA = convertToMinutes(a.startTime);
             const startB = convertToMinutes(b.startTime);
@@ -148,7 +176,6 @@ const Schedule = () => {
         const layout = {};
 
         sortedTasks.forEach(task => {
-            // Find the first column where this task fits without overlapping
             let columnIndex = 0;
             let placed = false;
 
@@ -160,7 +187,6 @@ const Schedule = () => {
                     columns[columnIndex] = [];
                 }
 
-                // Check for overlap with any task in this column
                 const hasOverlap = columns[columnIndex].some(existingTask => {
                     const existingStart = convertToMinutes(existingTask.startTime);
                     const existingEnd = convertToMinutes(existingTask.endTime);
@@ -185,7 +211,6 @@ const Schedule = () => {
         return (hours * 60) + mins;
     };
 
-
     const getTaskStyle = (task, columnIndex, totalColumns) => {
         const [startHour, startMin] = task.startTime.split(':').map(Number);
         const [endHour, endMin] = task.endTime.split(':').map(Number);
@@ -194,226 +219,354 @@ const Schedule = () => {
         const endTotalMins = (endHour * 60) + endMin;
         const durationMins = endTotalMins - startTotalMins;
 
-        // Row height is fixed at 60px
-        const pixelsPerMinute = 60 / 60; // 1px per minute
+        const pixelsPerMinute = 80 / 60; // Increased height for premium feel
 
         const top = startTotalMins * pixelsPerMinute;
         const height = durationMins * pixelsPerMinute;
 
-        const widthPercent = 90 / totalColumns; // Leave some gap
-        const leftPercent = 10 + (columnIndex * widthPercent); // Offset from left labels + column offset
+        const widthPercent = 90 / totalColumns;
+        const leftPercent = 8 + (columnIndex * widthPercent);
 
         return {
             top: `${top}px`,
-            height: `${Math.max(height, 20)}px`,
+            height: `${Math.max(height, 40)}px`,
             position: 'absolute',
             left: `${leftPercent}%`,
-            width: `${widthPercent - 1}%`, // Small gap between
+            width: `${widthPercent - 1}%`,
             zIndex: 10
         };
     };
 
-    // Calculate layout for current view
     const tasksForDate = getTasksForDate();
     const { columns, layout } = calculateTaskLayout(tasksForDate);
     const totalColumns = columns.length || 1;
 
-
-
     return (
-        <div className="p-4 md:p-8">
-            <header className="flex flex-col md:flex-row md:justify-between md:items-start mb-8 gap-4">
-                <div>
-                    <h1 className="text-2xl md:text-3xl font-bold text-nord-0 mb-1">Daily Schedule</h1>
-                    <p className="text-nord-3 text-sm">Manage your time effectively.</p>
-                </div>
-
-                <div className="flex items-center gap-4 w-full md:w-auto">
+        <div className="p-6 md:p-12 max-w-7xl mx-auto">
+            {/* Superior Header */}
+            <header className="flex flex-col md:flex-row md:justify-between md:items-center mb-16 gap-6 relative z-10">
+                <motion.div
+                    initial={{ x: -20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ duration: 0.6 }}
+                >
+                    <div className="flex items-center gap-2 text-nord-10 mb-2">
+                        <Sparkles size={16} className="animate-pulse" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em]">Temporal Stream Active</span>
+                    </div>
+                    <h1 className="text-3xl md:text-4xl font-black text-nord-0 tracking-tighter leading-tight">
+                        Daily <span className="text-nord-10 italic">Schedule</span>
+                    </h1>
+                    <p className="text-nord-3 font-semibold mt-2 text-base">
+                        Optimize your time-vectors for maximum academic throughput.
+                    </p>
+                </motion.div>
+                <div className="flex items-center gap-4">
                     <button
-                        onClick={() => setShowForm(true)}
-                        className="w-full md:w-auto flex items-center justify-center gap-2 bg-nord-10 text-white px-4 py-2 rounded-lg font-medium hover:bg-nord-9 transition-colors shadow-sm"
+                        onClick={() => {
+                            setSubmitError(null);
+                            setShowForm(true);
+                        }}
+                        className="flex items-center gap-3 bg-nord-0 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-nord-10 transition-all shadow-xl shadow-nord-0/20 active:scale-95 group"
                     >
-                        <Plus size={18} />
-                        Add Task
+                        <Plus size={18} strokeWidth={3} className="group-hover:rotate-90 transition-transform" />
+                        Add Objective
                     </button>
+                    <div className="hidden md:flex flex-col items-end border-l border-nord-4 pl-4 ml-4">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-nord-3">System Node</span>
+                        <span className="text-sm font-black text-nord-0 uppercase tracking-tighter">{username || email?.split('@')[0]}</span>
+                    </div>
                 </div>
             </header>
 
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                {/* Calendar / Date Picker Placeholder - Simple Navigation for MVP */}
-                <div className="lg:col-span-1 space-y-6">
-                    <div className="bg-white p-6 rounded-2xl border border-nord-4 shadow-sm">
-                        <h3 className="font-bold text-nord-1 mb-4 flex items-center gap-2">
-                            <CalendarIcon
-                                size={20}
-                                className="text-nord-10 cursor-pointer hover:text-nord-9 transition-colors"
-                                onClick={() => dateInputRef.current.showPicker()}
+            <motion.div
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                className="grid grid-cols-12 gap-8 lg:gap-12"
+            >
+                {/* Calendar / Date Picker Sidebar */}
+                <motion.div variants={itemVariants} className="col-span-12 lg:col-span-3 space-y-6">
+                    <div className="bg-white/70 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white shadow-[0_24px_48px_-12px_rgba(0,0,0,0.05)] relative overflow-hidden group">
+                        <div className="relative z-10">
+                            <h3 className="text-[10px] font-black uppercase tracking-widest text-nord-3 mb-6 px-1 border-b border-nord-4 pb-3 flex items-center justify-between">
+                                Temporal Selector
+                                <CalendarIcon
+                                    size={14}
+                                    className="text-nord-10 cursor-pointer hover:scale-110 transition-transform"
+                                    onClick={() => dateInputRef.current.showPicker()}
+                                />
+                            </h3>
+
+                            <input
+                                type="date"
+                                ref={dateInputRef}
+                                className="sr-only"
+                                onChange={(e) => {
+                                    if (e.target.value) {
+                                        const [y, m, d] = e.target.value.split('-').map(Number);
+                                        setSelectedDate(new Date(y, m - 1, d));
+                                    }
+                                }}
                             />
-                            Date
-                        </h3>
-                        {/* Hidden Date Input triggered by Calendar Icon */}
-                        <input
-                            type="date"
-                            ref={dateInputRef}
-                            className="sr-only"
-                            onChange={(e) => {
-                                if (e.target.value) {
-                                    const [y, m, d] = e.target.value.split('-').map(Number);
-                                    setSelectedDate(new Date(y, m - 1, d));
-                                }
-                            }}
-                        />
-                        <div className="flex items-center justify-between bg-nord-6 p-2 rounded-lg mb-4">
-                            <button onClick={() => {
-                                const d = new Date(selectedDate);
-                                d.setDate(d.getDate() - 1);
-                                setSelectedDate(d);
-                            }} className="p-1 hover:bg-white rounded-md transition-colors">
-                                <ChevronLeft size={20} />
-                            </button>
-                            <span className="font-medium text-sm">{selectedDate.toLocaleDateString()}</span>
-                            <button onClick={() => {
-                                const d = new Date(selectedDate);
-                                d.setDate(d.getDate() + 1);
-                                setSelectedDate(d);
-                            }} className="p-1 hover:bg-white rounded-md transition-colors">
-                                <ChevronRight size={20} />
+
+                            <div className="flex items-center justify-between bg-nord-6/50 p-2 rounded-2xl mb-8">
+                                <button onClick={() => {
+                                    const d = new Date(selectedDate);
+                                    d.setDate(d.getDate() - 1);
+                                    setSelectedDate(d);
+                                }} className="p-2 hover:bg-white rounded-xl transition-all active:scale-90">
+                                    <ChevronLeft size={20} className="text-nord-3" />
+                                </button>
+                                <span className="font-black text-[10px] uppercase tracking-widest text-nord-0">{selectedDate.toLocaleDateString()}</span>
+                                <button onClick={() => {
+                                    const d = new Date(selectedDate);
+                                    d.setDate(d.getDate() + 1);
+                                    setSelectedDate(d);
+                                }} className="p-2 hover:bg-white rounded-xl transition-all active:scale-90">
+                                    <ChevronRight size={20} className="text-nord-3" />
+                                </button>
+                            </div>
+
+                            <div className="text-center py-4 bg-nord-10/5 rounded-[2rem] border border-nord-10/10">
+                                <motion.p
+                                    key={selectedDate.getDate()}
+                                    initial={{ y: 10, opacity: 0 }}
+                                    animate={{ y: 0, opacity: 1 }}
+                                    className="text-5xl font-black text-nord-10 tracking-tighter"
+                                >
+                                    {selectedDate.getDate()}
+                                </motion.p>
+                                <p className="text-nord-3 font-black uppercase tracking-[0.2em] text-[10px] mt-2">{selectedDate.toLocaleDateString('en-US', { weekday: 'long' })}</p>
+                            </div>
+
+                            <button
+                                onClick={() => setSelectedDate(new Date())}
+                                className="w-full mt-6 py-3 text-[10px] font-black uppercase tracking-widest text-nord-3 hover:text-nord-10 transition-colors"
+                            >
+                                Return to Origin
                             </button>
                         </div>
-                        <div className="text-center">
-                            <p className="text-4xl font-bold text-nord-10 mb-1">{selectedDate.getDate()}</p>
-                            <p className="text-nord-3 font-medium uppercase tracking-wide text-sm">{selectedDate.toLocaleDateString('en-US', { weekday: 'long' })}</p>
-                        </div>
+                        <div className="absolute -right-16 -bottom-16 w-48 h-48 bg-nord-10/5 rounded-full blur-3xl pointer-events-none" />
                     </div>
 
-                    {/* Upcoming Summary logic could go here */}
-                </div>
-
-                {/* Timeline */}
-                <div className="lg:col-span-3">
-                    <div className="bg-white rounded-2xl border border-nord-4 shadow-sm overflow-hidden">
-                        <div className="p-4 border-b border-nord-4 bg-nord-6/30">
-                            <h2 className="font-bold text-lg text-nord-1">Timeline</h2>
+                    <div className="bg-nord-0 p-8 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden">
+                        <div className="relative z-10">
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-nord-9 mb-4">Daily Quotient</h4>
+                            <div className="flex items-end gap-2">
+                                <span className="text-2xl font-black tracking-tighter">{tasksForDate.length}</span>
+                                <span className="text-nord-9 text-xs font-bold mb-1 uppercase tracking-widest">Active Objectives</span>
+                            </div>
+                            <div className="mt-6 w-full h-1 bg-nord-1/50 rounded-full overflow-hidden">
+                                <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${Math.min((tasksForDate.length / 8) * 100, 100)}%` }}
+                                    className="h-full bg-nord-9"
+                                />
+                            </div>
                         </div>
-                        <div className="relative h-[1440px] custom-scrollbar overflow-y-auto" style={{ height: '700px' }}>
+                        <Brain size={120} className="absolute -right-8 -bottom-8 text-white/5 rotate-12" />
+                    </div>
+                </motion.div>
+
+                {/* Timeline Main */}
+                <motion.div variants={itemVariants} className="col-span-12 lg:col-span-9">
+                    <div className="bg-white/70 backdrop-blur-xl rounded-[3.5rem] border border-white shadow-[0_32px_64px_-16px_rgba(0,0,0,0.05)] overflow-hidden">
+                        <div className="p-8 border-b border-nord-4 bg-nord-6/30 flex items-center justify-between">
+                            <div>
+                                <h2 className="text-lg font-black text-nord-0 tracking-tight uppercase tracking-widest text-sm">Temporal Sequence</h2>
+                            </div>
+                            <div className="flex gap-2">
+                                <div className="w-3 h-3 rounded-full bg-nord-11" />
+                                <div className="w-3 h-3 rounded-full bg-nord-13" />
+                                <div className="w-3 h-3 rounded-full bg-nord-14" />
+                            </div>
+                        </div>
+                        <div className="relative custom-scrollbar overflow-y-auto" style={{ height: '700px' }}>
                             {/* Background Grid */}
-                            <div className="absolute top-0 left-0 w-full h-[1440px]">
+                            <div className="absolute top-0 left-0 w-full" style={{ height: `${24 * 80}px` }}>
                                 {hours.map(hour => (
-                                    <div key={hour} className="flex border-b border-nord-4/30 h-[60px]">
+                                    <div key={hour} className="flex border-b border-nord-4/30 h-[80px] group/row">
                                         {/* Time Label */}
-                                        <div className="w-[10%] min-w-[60px] border-r border-nord-4/50 p-2 text-right bg-nord-6/10">
-                                            <span className="text-xs font-medium text-nord-3 sticky left-0">
+                                        <div className="w-[8%] min-w-[70px] border-r border-nord-4/50 p-4 text-right bg-nord-6/10 group-hover/row:bg-nord-6/40 transition-colors">
+                                            <span className="text-[10px] font-black text-nord-3 uppercase tracking-widest">
                                                 {hour.toString().padStart(2, '0')}:00
                                             </span>
                                         </div>
                                         {/* Grid Row */}
                                         <div className="flex-1 relative">
-                                            <div className="absolute top-1/2 left-0 w-full h-px border-t border-dashed border-nord-4/30 -z-10 opacity-50"></div>
+                                            <div className="absolute top-1/2 left-0 w-full h-px border-t border-dashed border-nord-4/30 -z-0 opacity-30"></div>
                                         </div>
                                     </div>
                                 ))}
                             </div>
 
                             {/* Events Layer */}
-                            <div className="absolute top-0 left-0 w-full h-[1440px] pointer-events-none">
-                                {tasksForDate.map(task => (
-                                    <motion.div
-                                        key={task._id}
-                                        initial={{ opacity: 0, scale: 0.95 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        style={getTaskStyle(task, layout[task._id], totalColumns)}
-                                        className="bg-nord-10 border-l-4 border-nord-9 p-2 rounded-md shadow-md hover:brightness-110 transition-all cursor-pointer overflow-hidden pointer-events-auto group/task"
-                                    >
-                                        <div className="flex justify-between items-start h-full">
-                                            <div className="overflow-hidden">
-                                                <h4 className="text-xs font-bold text-white line-clamp-1">{task.title}</h4>
-                                                <p className="text-[10px] text-white/90 line-clamp-1">{task.startTime} - {task.endTime}</p>
+                            <div className="absolute top-0 left-0 w-full pointer-events-none" style={{ height: `${24 * 80}px` }}>
+                                <AnimatePresence>
+                                    {tasksForDate.map(task => (
+                                        <motion.div
+                                            key={task._id}
+                                            initial={{ opacity: 0, scale: 0.95, x: -10 }}
+                                            animate={{ opacity: 1, scale: 1, x: 0 }}
+                                            exit={{ opacity: 0, scale: 0.9, x: 10 }}
+                                            whileHover={{ y: -2, shadow: '0 20px 40px -12px rgba(0,0,0,0.1)' }}
+                                            style={getTaskStyle(task, layout[task._id], totalColumns)}
+                                            className="bg-nord-10 border-l-[6px] border-nord-9 p-4 rounded-2xl shadow-lg pointer-events-auto group/task overflow-hidden relative"
+                                        >
+                                            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover/task:opacity-100 transition-opacity" />
+                                            <div className="flex justify-between items-start h-full relative z-10">
+                                                <div className="overflow-hidden">
+                                                    <h4 className="text-sm font-black text-white line-clamp-1 truncate uppercase tracking-tight">{task.title}</h4>
+                                                    <div className="flex items-center gap-2 mt-1 opacity-80">
+                                                        <Clock size={10} className="text-white" />
+                                                        <p className="text-[10px] font-bold text-white uppercase tracking-widest">{task.startTime} — {task.endTime}</p>
+                                                    </div>
+                                                    {task.description && (
+                                                        <p className="text-[10px] text-white/60 mt-2 line-clamp-2 italic font-medium">{task.description}</p>
+                                                    )}
+                                                </div>
+                                                <button
+                                                    onClick={(e) => handleDelete(task._id, e)}
+                                                    className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-nord-11 transition-all opacity-0 group-hover/task:opacity-100"
+                                                >
+                                                    <Trash2 size={14} strokeWidth={2.5} />
+                                                </button>
                                             </div>
-                                            <button
-                                                onClick={(e) => handleDelete(task._id, e)}
-                                                className="text-white/70 hover:text-white transition-colors opacity-0 group-hover/task:opacity-100"
-                                            >
-                                                <Trash2 size={12} />
-                                            </button>
-                                        </div>
-                                    </motion.div>
-                                ))}
+                                            <div className="absolute -right-4 -bottom-4 w-16 h-16 bg-white/5 rounded-full blur-xl group-hover/task:scale-150 transition-transform duration-700" />
+                                        </motion.div>
+                                    ))}
+                                </AnimatePresence>
                             </div>
+
+                            {/* Empty State Overlay */}
+                            {tasksForDate.length === 0 && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-40">
+                                    <Clock size={48} className="text-nord-4 mb-4" strokeWidth={1.5} />
+                                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-nord-3">Quiescent Stream</span>
+                                </div>
+                            )}
                         </div>
                     </div>
-                </div>
-            </div>
+                </motion.div>
+            </motion.div>
 
             {/* Modal Form */}
-            {showForm && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
-                        <div className="p-6 border-b border-nord-4">
-                            <h3 className="text-xl font-bold text-nord-0">Add New Task</h3>
-                        </div>
-                        <div className="p-6 space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-nord-2 mb-1">Task Title</label>
-                                <input
-                                    type="text"
-                                    name="title"
-                                    value={formData.title}
-                                    onChange={handleInputChange}
-                                    className="w-full p-2 border border-nord-4 rounded-lg bg-nord-6/50 focus:ring-2 focus:ring-nord-10/20 focus:outline-none"
-                                    placeholder="e.g., Study Mathematics"
-                                    autoFocus
-                                />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
+            <AnimatePresence>
+                {showForm && (
+                    <div className="fixed inset-0 bg-nord-0/40 backdrop-blur-md z-[100] flex items-center justify-center p-4 overflow-y-auto">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                            className="bg-white rounded-[3rem] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.2)] w-full max-w-xl overflow-hidden border border-white"
+                        >
+                            <div className="p-10 border-b border-nord-4 flex items-center justify-between bg-nord-6/30">
                                 <div>
-                                    <label className="block text-sm font-medium text-nord-2 mb-1">Start Time</label>
-                                    <input
-                                        type="time"
-                                        name="startTime"
-                                        value={formData.startTime}
-                                        onChange={handleInputChange}
-                                        className="w-full p-2 border border-nord-4 rounded-lg bg-nord-6/50"
-                                    />
+                                    <h3 className="text-xl font-black text-nord-0 tracking-tighter">Initialize Objective</h3>
+                                    <p className="text-nord-3 text-[10px] font-black uppercase tracking-widest mt-1">Define new temporal coordinates</p>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-nord-2 mb-1">End Time</label>
-                                    <input
-                                        type="time"
-                                        name="endTime"
-                                        value={formData.endTime}
-                                        onChange={handleInputChange}
-                                        className="w-full p-2 border border-nord-4 rounded-lg bg-nord-6/50"
-                                    />
+                                <div className="p-4 bg-nord-10/10 rounded-[2rem] text-nord-10">
+                                    <Target size={32} strokeWidth={2.5} />
                                 </div>
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-nord-2 mb-1">Description (Optional)</label>
-                                <textarea
-                                    name="description"
-                                    value={formData.description}
-                                    onChange={handleInputChange}
-                                    rows="3"
-                                    className="w-full p-2 border border-nord-4 rounded-lg bg-nord-6/50 resize-none"
-                                ></textarea>
+
+                            {submitError && (
+                                <div className="mx-10 mt-8 p-4 bg-nord-11/10 border border-nord-11/20 text-nord-11 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3">
+                                    <Zap size={16} />
+                                    {submitError}
+                                </div>
+                            )}
+
+                            <div className="p-10 space-y-8">
+                                <div className="space-y-4">
+                                    <label className="block text-[10px] font-black uppercase tracking-widest text-nord-3 px-1">Objective Title</label>
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            name="title"
+                                            value={formData.title}
+                                            onChange={handleInputChange}
+                                            className="w-full pl-6 pr-14 py-5 bg-nord-6/50 border border-nord-4 rounded-3xl text-sm font-bold focus:border-nord-10 focus:ring-4 focus:ring-nord-10/10 outline-none transition-all"
+                                            placeholder="Command description..."
+                                            autoFocus
+                                        />
+                                        <div className="absolute right-6 top-1/2 -translate-y-1/2 text-nord-4">
+                                            <ArrowRight size={20} />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-8">
+                                    <div className="space-y-4">
+                                        <label className="block text-[10px] font-black uppercase tracking-widest text-nord-3 px-1">Start Sync</label>
+                                        <input
+                                            type="time"
+                                            name="startTime"
+                                            value={formData.startTime}
+                                            onChange={handleInputChange}
+                                            className="w-full px-6 py-5 bg-nord-6/50 border border-nord-4 rounded-3xl text-sm font-bold focus:border-nord-10 focus:ring-4 focus:ring-nord-10/10 outline-none transition-all appearance-none"
+                                        />
+                                    </div>
+                                    <div className="space-y-4">
+                                        <label className="block text-[10px] font-black uppercase tracking-widest text-nord-3 px-1">End Sync</label>
+                                        <input
+                                            type="time"
+                                            name="endTime"
+                                            value={formData.endTime}
+                                            onChange={handleInputChange}
+                                            className="w-full px-6 py-5 bg-nord-6/50 border border-nord-4 rounded-3xl text-sm font-bold focus:border-nord-10 focus:ring-4 focus:ring-nord-10/10 outline-none transition-all appearance-none"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <label className="block text-[10px] font-black uppercase tracking-widest text-nord-3 px-1">Supplemental Data (Optional)</label>
+                                    <textarea
+                                        name="description"
+                                        value={formData.description}
+                                        onChange={handleInputChange}
+                                        rows="3"
+                                        className="w-full px-6 py-5 bg-nord-6/50 border border-nord-4 rounded-3xl text-sm font-bold focus:border-nord-10 focus:ring-4 focus:ring-nord-10/10 outline-none transition-all resize-none"
+                                        placeholder="Append tactical details..."
+                                    ></textarea>
+                                </div>
                             </div>
-                        </div>
-                        <div className="p-6 pt-0 flex gap-3">
-                            <button
-                                onClick={() => setShowForm(false)}
-                                className="flex-1 py-2 font-bold rounded-lg border border-nord-4 text-nord-3 hover:bg-nord-6 transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleSubmit}
-                                className="flex-1 py-2 font-bold rounded-lg bg-nord-10 text-white hover:bg-nord-9 transition-colors"
-                            >
-                                Save Task
-                            </button>
-                        </div>
+
+                            <div className="p-10 pt-0 flex gap-4">
+                                <button
+                                    onClick={() => setShowForm(false)}
+                                    className="flex-1 py-5 font-black text-[10px] uppercase tracking-[0.2em] rounded-[1.5rem] border border-nord-4 text-nord-3 hover:bg-nord-6 transition-all active:scale-95"
+                                >
+                                    Abort Initialization
+                                </button>
+                                <button
+                                    onClick={handleSubmit}
+                                    className="flex-1 py-5 font-black text-[10px] uppercase tracking-[0.2em] rounded-[1.5rem] bg-nord-0 text-white hover:bg-nord-10 transition-all shadow-xl shadow-nord-0/20 active:scale-95 flex items-center justify-center gap-2"
+                                >
+                                    Commit Objective
+                                    <CheckCircle size={14} />
+                                </button>
+                            </div>
+                        </motion.div>
                     </div>
-                </div>
-            )}
+                )}
+            </AnimatePresence>
+            <style jsx>{`
+                .custom-scrollbar::-webkit-scrollbar {
+                    width: 6px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: #D8DEE9;
+                    border-radius: 10px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: #8FBCBB;
+                }
+            `}</style>
         </div>
     );
 };

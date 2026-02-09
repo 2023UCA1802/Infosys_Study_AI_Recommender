@@ -614,6 +614,22 @@ router.post("/api/schedule", async (req, res) => {
   const collection = db.collection("Schedule");
 
   try {
+    // Basic validation: end time must be after start time
+    if (startTime >= endTime) {
+      return res.status(400).json({ success: false, message: "End time must be after start time." });
+    }
+
+    // Overlap validation
+    const existingTasks = await collection.find({ userEmail, date }).toArray();
+    const isOverlapping = existingTasks.some(task => {
+      // Overlap condition: (newStart < existingEnd) && (existingStart < newEnd)
+      return (startTime < task.endTime && task.startTime < endTime);
+    });
+
+    if (isOverlapping) {
+      return res.status(400).json({ success: false, message: "This task overlaps with an existing task on your schedule for this day." });
+    }
+
     const newTask = {
       userEmail,
       title,
@@ -624,9 +640,6 @@ router.post("/api/schedule", async (req, res) => {
       createdAt: new Date()
     };
     
-    // For this specific request "add and delete tasks at any time with each timeline of 1 hour",
-    // We will just store whatever the frontend sends.
-    
     const result = await collection.insertOne(newTask);
     res.status(201).json({ success: true, message: "Task added successfully", task: { ...newTask, _id: result.insertedId } });
   } catch (error) {
@@ -634,6 +647,7 @@ router.post("/api/schedule", async (req, res) => {
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 });
+
 
 // GET: Get User's Schedule
 router.get("/api/schedule", async (req, res) => {
@@ -797,6 +811,22 @@ router.post("/api/study-logs", async (req, res) => {
   const collection = db.collection("StudyLogs");
 
   try {
+    // Basic validation: end time must be after start time
+    if (startTime >= endTime) {
+      return res.status(400).json({ success: false, message: "End time must be after start time." });
+    }
+
+    // Overlap validation
+    const existingLogs = await collection.find({ userEmail, date }).toArray();
+    const isOverlapping = existingLogs.some(log => {
+      // Overlap condition: (newStart < existingEnd) && (existingStart < newEnd)
+      return (startTime < log.endTime && log.startTime < endTime);
+    });
+
+    if (isOverlapping) {
+      return res.status(400).json({ success: false, message: "This session overlaps with an existing study log on the same day." });
+    }
+
     const newLog = {
       userEmail,
       date, // "YYYY-MM-DD" format
@@ -813,6 +843,7 @@ router.post("/api/study-logs", async (req, res) => {
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 });
+
 
 
 
@@ -855,6 +886,60 @@ router.get("/api/support", async (req, res) => {
     res.json({ success: true, queries });
   } catch (error) {
     console.error("Error fetching support queries:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+// PUT: Update Support Query (User - Only if Pending)
+router.put("/api/support/:id", async (req, res) => {
+  const { id } = req.params;
+  const { subject, message, userEmail } = req.body;
+  const db = client.db(dbname);
+  const collection = db.collection("SupportQueries");
+
+  try {
+    const query = await collection.findOne({ _id: new ObjectId(id), userEmail });
+    if (!query) {
+      return res.status(404).json({ success: false, message: "Query not found" });
+    }
+
+    if (query.status !== "Pending") {
+      return res.status(400).json({ success: false, message: "Only pending queries can be edited" });
+    }
+
+    const result = await collection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { subject, message, updatedAt: new Date() } }
+    );
+
+    res.json({ success: true, message: "Query updated successfully" });
+  } catch (error) {
+    console.error("Error updating support query:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+// DELETE: Delete Support Query (User - Only if Pending)
+router.delete("/api/support/:id", async (req, res) => {
+  const { id } = req.params;
+  const { userEmail } = req.query;
+  const db = client.db(dbname);
+  const collection = db.collection("SupportQueries");
+
+  try {
+    const query = await collection.findOne({ _id: new ObjectId(id), userEmail });
+    if (!query) {
+      return res.status(404).json({ success: false, message: "Query not found" });
+    }
+
+    if (query.status !== "Pending") {
+      return res.status(400).json({ success: false, message: "Only pending queries can be deleted" });
+    }
+
+    await collection.deleteOne({ _id: new ObjectId(id) });
+    res.json({ success: true, message: "Query deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting support query:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 });
@@ -1101,6 +1186,79 @@ router.get("/api/admin/stats/:email", async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching student stats:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+// GET: Student Dashboard Stats
+router.get("/api/student/dashboard-stats", async (req, res) => {
+  const { userEmail } = req.query;
+  const db = client.db(dbname);
+  const studyLogsCollection = db.collection("StudyLogs");
+  const usersCollection = db.collection("Users");
+
+  try {
+    const user = await usersCollection.findOne({ email: userEmail });
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    const logs = await studyLogsCollection.find({ userEmail }).sort({ date: -1 }).toArray();
+    
+    // Calculate Streak
+    let streak = 0;
+    if (logs.length > 0) {
+      const uniqueDates = [...new Set(logs.map(l => l.date))].sort((a, b) => new Date(b) - new Date(a));
+      const today = new Date().toISOString().split('T')[0];
+      const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+      
+      let currentCheck = uniqueDates[0] === today ? today : (uniqueDates[0] === yesterday ? yesterday : null);
+      
+      if (currentCheck) {
+        streak = 1;
+        for (let i = 1; i < uniqueDates.length; i++) {
+          const prevDate = new Date(currentCheck);
+          prevDate.setDate(prevDate.getDate() - 1);
+          const expectedDate = prevDate.toISOString().split('T')[0];
+          
+          if (uniqueDates[i] === expectedDate) {
+            streak++;
+            currentCheck = expectedDate;
+          } else {
+            break;
+          }
+        }
+      }
+    }
+
+    // Calculate Weekly Progress
+    // Find start of current week (Monday)
+    const now = new Date();
+    const day = now.getDay(); // 0 (Sun) to 6 (Sat)
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
+    const monday = new Date(now.setDate(diff));
+    monday.setHours(0, 0, 0, 0);
+
+    const thisWeekLogs = logs.filter(l => new Date(l.date) >= monday);
+    let completedHours = 0;
+    thisWeekLogs.forEach(log => {
+      if (log.startTime && log.endTime) {
+        const [sh, sm] = log.startTime.split(':').map(Number);
+        const [eh, em] = log.endTime.split(':').map(Number);
+        completedHours += (eh * 60 + em - (sh * 60 + sm)) / 60;
+      }
+    });
+
+    const dailyTarget = user.dailyStudyHours || { mon: 4, tue: 4, wed: 4, thu: 4, fri: 4, sat: 4, sun: 4 };
+    const targetHours = Object.values(dailyTarget).reduce((a, b) => (parseFloat(a) || 0) + (parseFloat(b) || 0), 0);
+
+    res.json({
+      success: true,
+      streak,
+      completedHours: parseFloat(completedHours.toFixed(1)),
+      targetHours: parseFloat(targetHours) || 12 // fallback to 12
+    });
+
+  } catch (error) {
+    console.error("Error fetching dashboard stats:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 });

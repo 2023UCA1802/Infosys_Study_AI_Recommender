@@ -133,7 +133,7 @@ const AdminFeedback = () => {
         <div className="p-8">
             <header className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-nord-0 mb-1">Feedback Management 📋</h1>
+                    <h1 className="text-xl font-bold text-nord-0 mb-1">Feedback Management 📋</h1>
                     <p className="text-nord-3 text-sm">View and manage all student feedback.</p>
                 </div>
 
@@ -161,7 +161,7 @@ const AdminFeedback = () => {
                         <MessageSquare className="text-nord-10" size={24} />
                     </div>
                     <div>
-                        <p className="text-2xl font-bold text-nord-1">{feedbacks.length}</p>
+                        <p className="text-xl font-bold text-nord-1">{feedbacks.length}</p>
                         <p className="text-sm text-nord-3">Total Feedback</p>
                     </div>
                 </div>

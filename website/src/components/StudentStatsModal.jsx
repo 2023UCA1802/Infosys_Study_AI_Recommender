@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, User, Mail, Target, Clock, TrendingUp } from 'lucide-react';
 import {
@@ -36,6 +37,14 @@ const StudentStatsModal = ({ student, onClose }) => {
         fetchStats();
     }, [student.email]);
 
+    // Body Scroll Lock
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, []);
+
     const COLORS = ['#81A1C1', '#A3BE8C']; // Nord palette: blue for pending, green for finished
 
     const goalsData = stats ? [
@@ -45,13 +54,13 @@ const StudentStatsModal = ({ student, onClose }) => {
 
     const hasGoals = goalsData.some(d => d.value > 0);
 
-    return (
+    return createPortal(
         <AnimatePresence>
             <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                className="fixed inset-0 bg-black/60 backdrop-blur-xl z-[9999] flex items-center justify-center p-4"
                 onClick={onClose}
             >
                 <motion.div
@@ -59,11 +68,11 @@ const StudentStatsModal = ({ student, onClose }) => {
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.9, opacity: 0 }}
                     transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                    className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+                    className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-y-auto"
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Header */}
-                    <div className="sticky top-0 bg-gradient-to-r from-nord-10 to-nord-9 text-white p-6 rounded-t-2xl flex items-center justify-between">
+                    <div className="sticky top-0 bg-gradient-to-r from-nord-10 to-nord-9 text-white p-6 rounded-t-2xl flex items-center justify-between z-20">
                         <div className="flex items-center gap-4">
                             <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-2xl font-bold">
                                 {student.username ? student.username[0].toUpperCase() : 'U'}
@@ -91,7 +100,7 @@ const StudentStatsModal = ({ student, onClose }) => {
                                 <div className="w-12 h-12 border-4 border-nord-10 border-t-transparent rounded-full animate-spin"></div>
                             </div>
                         ) : (
-                            <div className="space-y-6">
+                            <div className="space-y-6 text-nord-0">
                                 {/* Summary Stats - Moved to Top */}
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                                     <div className="bg-nord-10/10 p-4 rounded-xl text-center">
@@ -115,7 +124,7 @@ const StudentStatsModal = ({ student, onClose }) => {
                                 {/* Horizontal Scrollable Graphs */}
                                 <div className="flex overflow-x-auto pb-4 gap-6 snap-x snap-mandatory">
                                     {/* Goals Donut Chart */}
-                                    <div className="bg-nord-6 p-6 rounded-xl min-w-[400px] flex-shrink-0 snap-center">
+                                    <div className="bg-nord-6/50 p-6 rounded-xl min-w-[320px] sm:min-w-[400px] flex-shrink-0 snap-center">
                                         <h3 className="text-lg font-bold text-nord-1 mb-4 flex items-center gap-2">
                                             <Target size={20} className="text-nord-10" />
                                             Goal Completion Status
@@ -148,7 +157,7 @@ const StudentStatsModal = ({ student, onClose }) => {
                                     </div>
 
                                     {/* Weekly Study Hours Bar Chart */}
-                                    <div className="bg-nord-6 p-6 rounded-xl min-w-[400px] flex-shrink-0 snap-center">
+                                    <div className="bg-nord-6/50 p-6 rounded-xl min-w-[320px] sm:min-w-[400px] flex-shrink-0 snap-center">
                                         <h3 className="text-lg font-bold text-nord-1 mb-4 flex items-center gap-2">
                                             <Clock size={20} className="text-nord-14" />
                                             Weekly Study Hours
@@ -156,7 +165,7 @@ const StudentStatsModal = ({ student, onClose }) => {
                                         {stats && stats.weeklyStudyHours ? (
                                             <ResponsiveContainer width="100%" height={250}>
                                                 <BarChart data={stats.weeklyStudyHours}>
-                                                    <CartesianGrid strokeDasharray="3 3" stroke="#ECEFF4" />
+                                                    <CartesianGrid strokeDasharray="3 3" stroke="#D8DEE9" />
                                                     <XAxis dataKey="day" stroke="#4C566A" fontSize={12} />
                                                     <YAxis stroke="#4C566A" fontSize={12} unit="h" />
                                                     <Tooltip
@@ -174,7 +183,7 @@ const StudentStatsModal = ({ student, onClose }) => {
                                     </div>
 
                                     {/* Goal Progress Histogram */}
-                                    <div className="bg-nord-6 p-6 rounded-xl min-w-[400px] flex-shrink-0 snap-center">
+                                    <div className="bg-nord-6/50 p-6 rounded-xl min-w-[320px] sm:min-w-[400px] flex-shrink-0 snap-center">
                                         <h3 className="text-lg font-bold text-nord-1 mb-4 flex items-center gap-2">
                                             <TrendingUp size={20} className="text-nord-13" />
                                             Goal Progress Distribution
@@ -182,7 +191,7 @@ const StudentStatsModal = ({ student, onClose }) => {
                                         {stats && stats.goalProgressBins && stats.goalProgressBins.some(b => b.count > 0) ? (
                                             <ResponsiveContainer width="100%" height={250}>
                                                 <BarChart data={stats.goalProgressBins}>
-                                                    <CartesianGrid strokeDasharray="3 3" stroke="#ECEFF4" />
+                                                    <CartesianGrid strokeDasharray="3 3" stroke="#D8DEE9" />
                                                     <XAxis dataKey="name" stroke="#4C566A" fontSize={11} />
                                                     <YAxis stroke="#4C566A" fontSize={12} allowDecimals={false} />
                                                     <Tooltip
@@ -199,7 +208,7 @@ const StudentStatsModal = ({ student, onClose }) => {
                                     </div>
 
                                     {/* Study Time of Day Pie Chart */}
-                                    <div className="bg-nord-6 p-6 rounded-xl min-w-[400px] flex-shrink-0 snap-center">
+                                    <div className="bg-nord-6/50 p-6 rounded-xl min-w-[320px] sm:min-w-[400px] flex-shrink-0 snap-center">
                                         <h3 className="text-lg font-bold text-nord-1 mb-4 flex items-center gap-2">
                                             <Clock size={20} className="text-nord-15" />
                                             Study Time Preference
@@ -229,15 +238,14 @@ const StudentStatsModal = ({ student, onClose }) => {
                                             </div>
                                         )}
                                     </div>
-
-
                                 </div>
                             </div>
                         )}
                     </div>
                 </motion.div>
             </motion.div>
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
     );
 };
 

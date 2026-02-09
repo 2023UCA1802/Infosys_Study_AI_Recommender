@@ -49,7 +49,7 @@ const Navbar = ({ hideMenuButton = false }) => {
       >
         {/* Header / Project Name */}
         <div className="px-12 mb-8">
-          <h1 className="text-nord-6 text-3xl font-light tracking-wider">SITUS</h1>
+          <h1 className="text-nord-6 text-xl font-light tracking-wider">SITUS</h1>
           {projectsdetail?.city && (
             <p className="text-nord-4 text-sm mt-2 uppercase tracking-widest">{projectsdetail.city}</p>
           )}
@@ -61,7 +61,7 @@ const Navbar = ({ hideMenuButton = false }) => {
             <Link
               key={index}
               to={item.path}
-              className="w-full text-nord-6 text-xl font-light py-4 px-12 hover:bg-nord-10 transition-colors"
+              className="w-full text-nord-6 text-lg font-light py-4 px-12 hover:bg-nord-10 transition-colors"
               onClick={closeMenu}
             >
               {item.name}

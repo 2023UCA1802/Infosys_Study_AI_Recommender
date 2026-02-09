@@ -60,7 +60,7 @@ function App() {
   return (
 
 
-    <div className="flex min-h-screen bg-nord-6 text-nord-0 font-sans relative overflow-x-hidden">
+    <div className="flex flex-col w-full min-h-screen bg-[#f8faff] text-nord-0 font-sans relative overflow-x-hidden">
 
       {isLoggedIn ? (
         <div className="flex w-full">
@@ -80,7 +80,7 @@ function App() {
 
           <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
-          <div className="flex-1 md:ml-64 pt-16 md:pt-0">
+          <div className="flex-1 md:ml-68 pt-16 md:pt-0">
             <AnimatePresence mode="wait">
               <Routes location={location} key={location.pathname}>
                 <Route path="/" element={<Navigate to="/home" replace />} />
