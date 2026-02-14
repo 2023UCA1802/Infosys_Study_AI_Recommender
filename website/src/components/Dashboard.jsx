@@ -68,6 +68,8 @@ const DashboardHome = () => {
   const [streak, setStreak] = useState(0);
   const [completedHours, setCompletedHours] = useState(0);
   const [targetHours, setTargetHours] = useState(12);
+  const [completedGoals, setCompletedGoals] = useState(0);
+  const [totalGoalsCount, setTotalGoalsCount] = useState(0);
   const [loadingStats, setLoadingStats] = useState(true);
   const navigate = useNavigate();
 
@@ -119,6 +121,8 @@ const DashboardHome = () => {
             setStreak(data.streak);
             setCompletedHours(data.completedHours);
             setTargetHours(data.targetHours);
+            setCompletedGoals(data.completedGoals || 0);
+            setTotalGoalsCount(data.totalGoals || 0);
           }
         } catch (error) {
           console.error("Error fetching dashboard stats:", error);
@@ -263,7 +267,7 @@ const DashboardHome = () => {
                       </td>
                       <td className="px-8 py-6 text-center">
                         <div className="inline-flex flex-col items-center">
-                          <span className="font-black text-xl text-nord-0">{student.completedHours || 0}</span>
+                          <span className="font-black text-xl text-nord-0">{student.completedGoals || 0}</span>
                           <span className="text-[10px] font-black uppercase tracking-widest text-nord-3">of {student.totalGoals || 0}</span>
                         </div>
                       </td>
@@ -392,7 +396,7 @@ const DashboardHome = () => {
               <h3 className="text-xl font-black mb-4 tracking-tighter leading-tight">Master <span className="text-nord-14">{targetHours}h</span> of Focus</h3>
               <div className="flex items-center gap-2 text-white/50 text-xs font-black uppercase tracking-widest">
                 <div className="w-1.5 h-1.5 rounded-full bg-nord-14 animate-pulse" />
-                <span>{completedHours}h logged • {Math.round((completedHours / targetHours) * 100)}% complete</span>
+                <span>{completedHours}h logged • {targetHours > 0 ? Math.round((completedHours / targetHours) * 100) : 0}% complete</span>
               </div>
             </div>
 

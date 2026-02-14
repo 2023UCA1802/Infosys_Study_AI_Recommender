@@ -278,6 +278,20 @@ router.get("/verify", async (req, res) => {
 });
 app.use(router);
 
+const calculateFocusScore = (completedGoals, totalGoals, avgProgress, actualHours, targetHours) => {
+  if (totalGoals === 0) {
+    if (actualHours > 0) return 60; // Baseline for active students without goals
+    return 0;
+  }
+  
+  const goalScore = (completedGoals / totalGoals) * 50;
+  const progressScore = (parseFloat(avgProgress) || 0) / 100 * 20;
+  const disciplineScore = targetHours > 0 ? Math.min(actualHours / targetHours, 1) * 30 : 20; // 20% default discipline if no target set
+  
+  const totalScore = goalScore + progressScore + disciplineScore;
+  return Math.min(Math.round(totalScore), 100);
+};
+
 
 app.post("/signupforgot", async (req, res) => {
   const user = req.body;
@@ -778,12 +792,14 @@ router.get("/api/admin/students", async (req, res) => {
       });
       const studyHours = (totalMinutes / 60).toFixed(1);
 
-      // Calculating Focus Score (Mock logic: based on completion rate + random variation for realism)
-      // Base score 50, + 5 per completed goal, max 100.
-      let focusScore = 50 + (completedGoals * 5);
-      if (focusScore > 100) focusScore = 100;
-      if (totalGoals === 0 && tasks.length > 0) focusScore = 60; // Has schedule but no goals
-      if (totalGoals === 0 && tasks.length === 0) focusScore = 0;
+      // Calculating Refined Focus Score
+      const focusScore = calculateFocusScore(
+        completedGoals, 
+        totalGoals, 
+        avgProgress, 
+        studyHours, 
+        student.studyHoursPerWeek || 0
+      );
 
       return {
         ...student,
@@ -1250,11 +1266,19 @@ router.get("/api/student/dashboard-stats", async (req, res) => {
     const dailyTarget = user.dailyStudyHours || { mon: 4, tue: 4, wed: 4, thu: 4, fri: 4, sat: 4, sun: 4 };
     const targetHours = Object.values(dailyTarget).reduce((a, b) => (parseFloat(a) || 0) + (parseFloat(b) || 0), 0);
 
+    // Goal Stats
+    const goalsCollection = db.collection("Goals");
+    const goals = await goalsCollection.find({ userEmail }).toArray();
+    const totalGoals = goals.length;
+    const completedGoals = goals.filter(g => g.status === "Finished" || g.progress === 100).length;
+
     res.json({
       success: true,
       streak,
       completedHours: parseFloat(completedHours.toFixed(1)),
-      targetHours: parseFloat(targetHours) || 12 // fallback to 12
+      targetHours: parseFloat(targetHours) || 12, // fallback to 12
+      completedGoals,
+      totalGoals
     });
 
   } catch (error) {
@@ -1327,11 +1351,14 @@ router.get("/api/admin/reports/student/:email", async (req, res) => {
     });
     const totalStudyHours = (totalStudyTime / 60).toFixed(1);
 
-    // Focus Score calculation (reusing logic from /api/admin/students)
-    let focusScore = 50 + (completedGoals * 5);
-    if (focusScore > 100) focusScore = 100;
-    if (goals.length === 0 && studyLogs.length > 0) focusScore = 60;
-    if (goals.length === 0 && studyLogs.length === 0) focusScore = 0;
+    // Focus Score calculation using the refined formula
+    const focusScore = calculateFocusScore(
+      completedGoals, 
+      goals.length, 
+      user.avgProgress || 0, // Fallback if not specifically calculated here
+      totalStudyHours, 
+      user.studyHoursPerWeek || 0
+    );
 
     const csvContent = 
       "Monthly Study Report\n" +
@@ -1385,10 +1412,13 @@ router.get("/api/admin/reports/all", async (req, res) => {
       });
       const totalStudyHours = (totalStudyTime / 60).toFixed(1);
 
-      let focusScore = 50 + (completedGoals * 5);
-      if (focusScore > 100) focusScore = 100;
-      if (goals.length === 0 && studyLogs.length > 0) focusScore = 60;
-      if (goals.length === 0 && studyLogs.length === 0) focusScore = 0;
+      const focusScore = calculateFocusScore(
+        completedGoals, 
+        goals.length, 
+        student.avgProgress || 0, 
+        totalStudyHours, 
+        student.studyHoursPerWeek || 0
+      );
 
       csvContent += `"${student.username}","${student.email}",${goals.length},${completedGoals},${totalStudyHours},${focusScore}%\n`;
     }
